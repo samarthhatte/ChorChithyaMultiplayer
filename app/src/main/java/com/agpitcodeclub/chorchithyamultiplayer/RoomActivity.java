@@ -190,34 +190,40 @@ public class RoomActivity extends AppCompatActivity {
 
     private void startGame() {
         List<String> roles = new ArrayList<>();
+        int playerCount = playerList.size();
 
-        // --- TEST MODE FOR 2 PLAYERS ---
-        if (playerList.size() == 2) {
-            // Force these roles so you can test winning/losing
-            roles.add("Sipahi");
-            roles.add("Chor");
-        }
-        // --- NORMAL MODE FOR 3+ PLAYERS ---
-        else {
+        // 1. The Core Roles (Always needed for the game to work)
+        roles.add("Sipahi"); // The Guesser
+        roles.add("Chor");   // The Target
+
+        // 2. Add roles based on player count
+        if (playerCount >= 3) {
             roles.add("Raja");
-            roles.add("Sipahi");
-            roles.add("Chor");
+        }
+        if (playerCount >= 4) {
             roles.add("Mantri");
-            if (playerList.size() > 4) roles.add("Rani");
-            if (playerList.size() > 5) roles.add("Senapati");
+        }
+        if (playerCount >= 5) {
+            roles.add("Rani");
+        }
+        if (playerCount >= 6) {
+            roles.add("Senapati");
         }
 
-        // Shuffle the roles so we don't know who gets what
+        // 3. Shuffle (Crucial so no one knows who is what)
         java.util.Collections.shuffle(roles);
 
-        // Assign Roles in Firebase
-        for (int i = 0; i < playerList.size(); i++) {
+        // 4. Assign to Players in Firebase
+        for (int i = 0; i < playerCount; i++) {
             String pName = playerList.get(i);
             String assignedRole = roles.get(i);
+
+            // Save to Firebase
             roomRef.child("players").child(pName).child("role").setValue(assignedRole);
         }
 
-        // Trigger game start
-        roomRef.child("status").setValue("playing");
+        // 5. Reset Game State
+        roomRef.child("winner").removeValue(); // Clear old winner
+        roomRef.child("status").setValue("playing"); // Start the game!
     }
 }
