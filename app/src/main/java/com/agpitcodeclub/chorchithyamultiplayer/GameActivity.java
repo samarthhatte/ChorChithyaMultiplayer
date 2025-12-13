@@ -24,7 +24,7 @@ import java.util.List;
 
 public class GameActivity extends AppCompatActivity {
 
-    TextView tvPlayerName, tvRole, tvHiddenText, tvResult;
+    TextView tvPlayerName, tvRole, tvHiddenText, tvResult, tvInstruction;
     CardView cardView;
     LinearLayout layoutSipahiGuess;
     ListView listViewSuspects;
@@ -42,6 +42,7 @@ public class GameActivity extends AppCompatActivity {
         setContentView(R.layout.activity_game);
 
         // 1. Initialize UI
+        tvInstruction = findViewById(R.id.tvInstruction);
         tvPlayerName = findViewById(R.id.tvPlayerName);
         tvRole = findViewById(R.id.tvRole);
         tvHiddenText = findViewById(R.id.tvHiddenText);
@@ -97,6 +98,8 @@ public class GameActivity extends AppCompatActivity {
     // --- SIPAHI LOGIC ---
     private void setupSipahiUI() {
         layoutSipahiGuess.setVisibility(View.VISIBLE); // Show the guessing area
+
+        tvInstruction.setVisibility(View.GONE);
 
         // Load other players into the list
         roomRef.child("players").addListenerForSingleValueEvent(new ValueEventListener() {
@@ -172,10 +175,42 @@ public class GameActivity extends AppCompatActivity {
         tvResult.setText(message);
         tvResult.setVisibility(View.VISIBLE);
 
+        tvInstruction.setVisibility(View.GONE);
+
+        // CALL THE SCORING FUNCTION HERE:
+        updateScores(winner);
+
         new AlertDialog.Builder(this)
                 .setTitle("Game Over")
                 .setMessage(message)
                 .setPositiveButton("OK", null)
                 .show();
     }
+
+    private void updateScores(String winnerRole) {
+        int myPoints = 0;
+
+        // 1. Assign points based on roles
+        if (myRole.equals("Raja")) myPoints = 1000;
+        else if (myRole.equals("Rani")) myPoints = 900;
+        else if (myRole.equals("Mantri")) myPoints = 800;
+        else if (myRole.equals("Senapati")) myPoints = 500;
+
+            // 2. Handle Sipahi and Chor points based on the winner
+        else if (myRole.equals("Sipahi")) {
+            if (winnerRole.equals("Sipahi")) myPoints = 100; // Success
+            else myPoints = 0; // Failed
+        }
+        else if (myRole.equals("Chor")) {
+            if (winnerRole.equals("Chor")) myPoints = 100; // Stole the points
+            else myPoints = 0; // Caught
+        }
+
+        // 3. Update the UI
+        tvResult.append("\n\nYou got: " + myPoints + " points!");
+
+        // Optional: Save to Firebase to track total score across rounds
+        // roomRef.child("players").child(playerName).child("score").setValue(currentScore + myPoints);
+    }
+
 }

@@ -189,33 +189,35 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     private void startGame() {
-        // 1. Create the Roles List
         List<String> roles = new ArrayList<>();
-        roles.add("Raja");
-        roles.add("Sipahi");
-        roles.add("Chor");
-        roles.add("Mantri");
-        // Add more roles if you have more than 4 players, or duplicates for testing
-        while(roles.size() < playerList.size()) {
-            roles.add("Praja"); // Civilian role for extras
+
+        // --- TEST MODE FOR 2 PLAYERS ---
+        if (playerList.size() == 2) {
+            // Force these roles so you can test winning/losing
+            roles.add("Sipahi");
+            roles.add("Chor");
+        }
+        // --- NORMAL MODE FOR 3+ PLAYERS ---
+        else {
+            roles.add("Raja");
+            roles.add("Sipahi");
+            roles.add("Chor");
+            roles.add("Mantri");
+            if (playerList.size() > 4) roles.add("Rani");
+            if (playerList.size() > 5) roles.add("Senapati");
         }
 
-        // 2. Shuffle Roles
-        // We need a specific order to match the playerList
-        // Note: Collections.shuffle(roles) requires import java.util.Collections;
+        // Shuffle the roles so we don't know who gets what
         java.util.Collections.shuffle(roles);
 
-        // 3. Assign Roles in Firebase
+        // Assign Roles in Firebase
         for (int i = 0; i < playerList.size(); i++) {
             String pName = playerList.get(i);
             String assignedRole = roles.get(i);
-
-            // We overwrite the value at 'players/pName' with a Role Object or just the string
-            // Let's use a simpler structure: players -> pName -> role
             roomRef.child("players").child(pName).child("role").setValue(assignedRole);
         }
 
-        // 4. Change Status to 'playing' triggers everyone to move
+        // Trigger game start
         roomRef.child("status").setValue("playing");
     }
 }
