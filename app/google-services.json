@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "563452541914",
+    "project_id": "chor-chithya-multiplayer",
+    "storage_bucket": "chor-chithya-multiplayer.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:563452541914:android:3b0ab9306d9a7f1e449ee3",
+        "android_client_info": {
+          "package_name": "com.agpitcodeclub.chorchithyamultiplayer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSKdp4fP91Kwl69WkCPOqIZo-2T0IIy6g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
