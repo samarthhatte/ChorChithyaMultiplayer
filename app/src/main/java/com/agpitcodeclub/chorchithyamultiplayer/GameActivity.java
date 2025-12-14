@@ -35,12 +35,15 @@ public class GameActivity extends AppCompatActivity {
     ValueEventListener winnerListener;
     DatabaseReference winnerRef;
     String myMode;
-    TextView tvRoundAnnounce; // Add this with other TextViews
+    TextView tvRoundAnnounce;
     int currentRound = 1;
     int totalRounds = 1;
 
     String roomCode, playerName, myRole;
     boolean isRevealed = false;
+
+    // isReady is not tracked in this activity, it's tracked in RoomActivity
+    // boolean isReady = false;
 
     DatabaseReference roomRef;
     List<String> suspectsList = new ArrayList<>();
@@ -76,7 +79,7 @@ public class GameActivity extends AppCompatActivity {
         playerName = getIntent().getStringExtra("playerName");
         tvPlayerName.setText("Hi, " + playerName);
         myMode = getIntent().getStringExtra("mode");
-        mode = getIntent().getStringExtra("mode"); // <--- ADD THIS LINE (Crucial!)
+        mode = getIntent().getStringExtra("mode");
 
         roomRef = FirebaseDatabase.getInstance().getReference("rooms").child(roomCode);
 
@@ -99,7 +102,7 @@ public class GameActivity extends AppCompatActivity {
             public void onCancelled(@NonNull DatabaseError error) {}
         });
 
-        // 3. Update Click Listener
+        // 3. Update Click Listener (Card Reveal)
         cardView.setOnClickListener(v -> {
             if (!isRevealed) {
                 // REVEAL
@@ -148,7 +151,6 @@ public class GameActivity extends AppCompatActivity {
     // --- SIPAHI LOGIC ---
     private void setupSipahiUI() {
         layoutSipahiGuess.setVisibility(View.VISIBLE); // Show the guessing area
-
         tvInstruction.setVisibility(View.GONE);
 
         // Load other players into the list
@@ -199,6 +201,7 @@ public class GameActivity extends AppCompatActivity {
         });
     }
 
+    // --- GAME OVER & NEXT ROUND LOGIC ---
     private void showGameOverDialog(String winner) {
         String message = "Sipahi".equals(winner) ? "Sipahi Wins!" : "Chor Wins!";
 
@@ -216,22 +219,48 @@ public class GameActivity extends AppCompatActivity {
             // --- NOT FINISHED: Show "Next Round" ---
             builder.setTitle("Round " + currentRound + " Over");
             builder.setMessage(message);
+
+            // 🔑 UPDATED POSITIVE BUTTON LOGIC FOR ROSTER SAVING
             builder.setPositiveButton("Next Round", (dialog, which) -> {
                 if (roomRef != null) {
                     roomRef.child("winner").removeValue();
-
-                    // CRITICAL FIX: Everyone forces status to 'waiting' when leaving
-                    // This ensures that when you land in the Lobby, it doesn't bounce you back.
                     roomRef.child("status").setValue("waiting");
                 }
 
-                // Host increments round number (Only Host Logic)
-                if ("host".equals(myMode)) {
-                    roomRef.child("currentRound").setValue(currentRound + 1);
-                }
+                // 1. Get the list of players currently in the room
+                roomRef.child("players").addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        List<String> lastPlayerRoster = new ArrayList<>();
+                        for (DataSnapshot player : snapshot.getChildren()) {
+                            lastPlayerRoster.add(player.getKey());
+                        }
 
-                goToLobby();
+                        // 2. CRITICAL: Save this roster to Firebase
+                        roomRef.child("lastPlayerRoster").setValue(lastPlayerRoster)
+                                .addOnCompleteListener(task -> {
+                                    // This block executes ONLY after the roster is saved!
+
+                                    // 3. Host increments round number (Only Host Logic)
+                                    if ("host".equals(myMode)) {
+                                        // The round increment must happen AFTER saving the roster,
+                                        // so RoomActivity can pick up the correct round number.
+                                        roomRef.child("currentRound").setValue(currentRound + 1);
+                                    }
+
+                                    // 4. Send everyone to the lobby
+                                    goToLobby();
+                                });
+                    }
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Toast.makeText(GameActivity.this, "Error saving player roster.", Toast.LENGTH_SHORT).show();
+                        // Fallback: If roster save fails, still send to lobby to prevent lockup
+                        goToLobby();
+                    }
+                });
             });
+
         } else {
             // --- FINISHED: Show "See Results" ---
             builder.setTitle("Tournament Finished!");
