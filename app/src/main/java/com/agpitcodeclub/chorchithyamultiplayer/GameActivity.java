@@ -31,6 +31,12 @@ public class GameActivity extends AppCompatActivity {
     ListView listViewSuspects;
     TextView tvPoliceName;
     LinearLayout cardLayout;
+    String mode; // To store "host" or "joiner"
+    ValueEventListener winnerListener;
+    DatabaseReference winnerRef;
+    String myMode;
+    int currentRound = 1;
+    int totalRounds = 1;
 
     String roomCode, playerName, myRole;
     boolean isRevealed = false;
@@ -44,13 +50,6 @@ public class GameActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
 
-        // 1. Get colors safely using ContextCompat
-        int colorCardBack = androidx.core.content.ContextCompat.getColor(this, R.color.card_back);
-        int colorCardFace = androidx.core.content.ContextCompat.getColor(this, R.color.card_face);
-
-        // 2. Set Initial State
-        cardLayout.setBackgroundColor(colorCardBack);
-
         // 1. Initialize UI
         tvInstruction = findViewById(R.id.tvInstruction);
         tvPlayerName = findViewById(R.id.tvPlayerName);
@@ -63,12 +62,35 @@ public class GameActivity extends AppCompatActivity {
         tvPoliceName = findViewById(R.id.tvPoliceName);
         cardLayout = findViewById(R.id.cardLayout);
 
+        // 1. Get colors safely using ContextCompat
+        int colorCardBack = androidx.core.content.ContextCompat.getColor(this, R.color.card_back);
+        int colorCardFace = androidx.core.content.ContextCompat.getColor(this, R.color.card_face);
+
+        // 2. Set Initial State
+        cardLayout.setBackgroundColor(colorCardBack);
+
         // 2. Get Intent Data
         roomCode = getIntent().getStringExtra("roomCode");
         playerName = getIntent().getStringExtra("playerName");
         tvPlayerName.setText("Hi, " + playerName);
+        myMode = getIntent().getStringExtra("mode");
+        mode = getIntent().getStringExtra("mode"); // <--- ADD THIS LINE (Crucial!)
 
         roomRef = FirebaseDatabase.getInstance().getReference("rooms").child(roomCode);
+
+        // Inside onCreate, after defining roomRef:
+        roomRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.hasChild("currentRound") && snapshot.hasChild("totalRounds")) {
+                    currentRound = snapshot.child("currentRound").getValue(Integer.class);
+                    totalRounds = snapshot.child("totalRounds").getValue(Integer.class);
+                    setTitle("Round " + currentRound + " / " + totalRounds); // Update App Bar
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
 
         // 3. Update Click Listener
         cardView.setOnClickListener(v -> {
@@ -170,76 +192,121 @@ public class GameActivity extends AppCompatActivity {
         });
     }
 
-    // --- GLOBAL LISTENER (Everyone sees the result) ---
-    private void listenForWinner() {
-        roomRef.child("winner").addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.exists()) {
-                    String winner = snapshot.getValue(String.class);
-                    showGameOverDialog(winner);
-                }
-            }
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
-        });
-    }
-
     private void showGameOverDialog(String winner) {
-        String message = "";
-        if ("Sipahi".equals(winner)) message = "Sipahi Wins!";
-        else message = "Chor Wins!";
+        String message = "Sipahi".equals(winner) ? "Sipahi Wins!" : "Chor Wins!";
 
         tvResult.setText(message);
         tvResult.setVisibility(View.VISIBLE);
         tvInstruction.setVisibility(View.GONE);
 
-        updateScores(winner); // Calculate points
+        if (myRole != null) updateScores(winner);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Round Over");
-        builder.setMessage(message);
-        builder.setCancelable(false); // Can't click outside
+        builder.setCancelable(false);
 
-        // BUTTON 1: "Next Round" (Only works for Host, but we show for all for simplicity)
-        builder.setPositiveButton("Next Round", (dialog, which) -> {
-            // Go back to Lobby (RoomActivity) to shuffle again
-            // We use flags to clear the activity stack so it feels like a reset
-            Intent intent = new Intent(GameActivity.this, RoomActivity.class);
-            intent.putExtra("playerName", playerName);
-            intent.putExtra("mode", "host"); // Assuming they stay host
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
-            finish();
-        });
+        // LOGIC: Is this the LAST round?
+        if (currentRound < totalRounds) {
+            // --- NOT FINISHED: Show "Next Round" ---
+            builder.setTitle("Round " + currentRound + " Over");
+            builder.setMessage(message);
+            builder.setPositiveButton("Next Round", (dialog, which) -> {
+                if (roomRef != null) roomRef.child("winner").removeValue();
 
-        builder.show();
+                // Host increments round number
+                if ("host".equals(myMode)) {
+                    roomRef.child("currentRound").setValue(currentRound + 1);
+                }
+
+                goToLobby(); // Helper method to switch screens
+            });
+        } else {
+            // --- FINISHED: Show "See Results" ---
+            builder.setTitle("Tournament Finished!");
+            builder.setMessage(message + "\n\nGame Over!");
+            builder.setPositiveButton("See Scoreboard", (dialog, which) -> {
+                if (roomRef != null) roomRef.child("winner").removeValue();
+
+                // Go to Dashboard
+                Intent intent = new Intent(GameActivity.this, DashboardActivity.class);
+                intent.putExtra("roomCode", roomCode);
+                startActivity(intent);
+                finish();
+            });
+        }
+
+        if (!isFinishing() && !isDestroyed()) {
+            builder.show();
+        }
+    }
+
+    // Helper to keep code clean
+    private void goToLobby() {
+        Intent intent = new Intent(GameActivity.this, RoomActivity.class);
+        intent.putExtra("playerName", playerName);
+        intent.putExtra("roomCode", roomCode);
+        intent.putExtra("mode", myMode);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    // --- GLOBAL LISTENER (Everyone sees the result) ---
+    private void listenForWinner() {
+        winnerRef = roomRef.child("winner");
+
+        winnerListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    String winner = snapshot.getValue(String.class);
+
+                    // CRITICAL CHECK: Is the activity valid?
+                    if (!isFinishing() && !isDestroyed()) {
+                        showGameOverDialog(winner);
+                    }
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        };
+
+        // Attach the listener
+        winnerRef.addValueEventListener(winnerListener);
     }
 
     private void updateScores(String winnerRole) {
-        int myPoints = 0;
+        if (myRole == null) return;
 
-        // 1. Assign points based on roles
-        if (myRole.equals("Raja")) myPoints = 1000;
-        else if (myRole.equals("Rani")) myPoints = 900;
-        else if (myRole.equals("Mantri")) myPoints = 800;
-        else if (myRole.equals("Senapati")) myPoints = 500;
+        int roundPoints = 0;
+        // 1. Calculate Points
+        if (myRole.equals("Raja")) roundPoints = 1000;
+        else if (myRole.equals("Rani")) roundPoints = 900;
+        else if (myRole.equals("Mantri")) roundPoints = 800;
+        else if (myRole.equals("Senapati")) roundPoints = 500;
+        else if (myRole.equals("Sipahi")) roundPoints = winnerRole.equals("Sipahi") ? 100 : 0;
+        else if (myRole.equals("Chor")) roundPoints = winnerRole.equals("Chor") ? 100 : 0;
 
-            // 2. Handle Sipahi and Chor points based on the winner
-        else if (myRole.equals("Sipahi")) {
-            if (winnerRole.equals("Sipahi")) myPoints = 100; // Success
-            else myPoints = 0; // Failed
-        }
-        else if (myRole.equals("Chor")) {
-            if (winnerRole.equals("Chor")) myPoints = 100; // Stole the points
-            else myPoints = 0; // Caught
-        }
+        // 2. Save to Firebase (Add to existing score)
+        int finalPoints = roundPoints;
+        DatabaseReference scoreRef = roomRef.child("players").child(playerName).child("score");
 
-        // 3. Update the UI
-        tvResult.append("\n\nYou got: " + myPoints + " points!");
+        scoreRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                int oldScore = 0;
+                if (snapshot.exists()) {
+                    // Safely handle null or different types
+                    try {
+                        oldScore = snapshot.getValue(Integer.class);
+                    } catch (Exception e) { oldScore = 0; }
+                }
+                scoreRef.setValue(oldScore + finalPoints);
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
 
-        // Optional: Save to Firebase to track total score across rounds
-        // roomRef.child("players").child(playerName).child("score").setValue(currentScore + myPoints);
+        tvResult.append("\n\nYou got: " + roundPoints + " points!");
     }
 
     private void findAndShowPolice() {
@@ -258,6 +325,15 @@ public class GameActivity extends AppCompatActivity {
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Stop listening when the screen closes!
+        if (winnerRef != null && winnerListener != null) {
+            winnerRef.removeEventListener(winnerListener);
+        }
     }
 
 }

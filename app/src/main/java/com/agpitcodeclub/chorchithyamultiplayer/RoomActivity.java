@@ -1,9 +1,8 @@
-package com.agpitcodeclub.chorchithyamultiplayer; // Update with your package name
+package com.agpitcodeclub.chorchithyamultiplayer;
 
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -23,6 +22,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -60,28 +60,49 @@ public class RoomActivity extends AppCompatActivity {
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, playerList);
         listViewPlayers.setAdapter(adapter);
 
-        // 3. Get Data from Previous Screen
+        // 3. Get Data Safely
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
-            playerName = extras.getString("playerName");
-            role = extras.getString("mode");
+            playerName = extras.getString("playerName", "Player");
+
+            if (extras.containsKey("mode")) {
+                role = extras.getString("mode");
+            }
+            if (role == null) role = "joiner";
+
+            // CHECK: Did we come from "Next Round"?
+            if (extras.containsKey("roomCode")) {
+                roomCode = extras.getString("roomCode");
+            }
         }
 
-        // 4. Check Role
+        // 4. Host Logic
         if (role.equals("host")) {
-            // I am the Host -> Create the Room
-            btnStart.setVisibility(View.VISIBLE); // Host can see Start button
-            createRoom();
-        } else {
-            // I am a Joiner -> Ask for Code
-            showJoinDialog();
+            btnStart.setVisibility(View.VISIBLE);
+
+            // CASE A: Returning from a game (Next Round) -> Reuse Room
+            if (roomCode != null && !roomCode.isEmpty()) {
+                setupExistingRoomAsHost();
+            }
+            // CASE B: Brand New Game -> Ask for Rounds
+            else {
+                showCreateRoomDialog();
+            }
+        }
+        // 5. Joiner Logic
+        else {
+            if (roomCode != null && !roomCode.isEmpty()) {
+                setupExistingRoomAsJoiner();
+            } else {
+                showJoinDialog();
+            }
         }
 
-        // 5. WhatsApp Invite Button Logic
+        // 6. Share Button
         btnShare.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_SEND);
             intent.setType("text/plain");
-            intent.putExtra(Intent.EXTRA_TEXT, "Join my Chor Chithya game! Room Code: " + roomCode);
+            intent.putExtra(Intent.EXTRA_TEXT, "Join my game! Code: " + roomCode);
             intent.setPackage("com.whatsapp");
             try {
                 startActivity(intent);
@@ -90,144 +111,174 @@ public class RoomActivity extends AppCompatActivity {
             }
         });
 
-        // 6. Start Game Logic (For later)
-// 6. Start Game Logic (Updated)
+        // 7. Start Game Button
         btnStart.setOnClickListener(v -> {
-            // Check if we have enough players (Optional: remove check for testing)
             if (playerList.size() < 2) {
-                Toast.makeText(this, "Need at least 2 players to start!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Need at least 2 players!", Toast.LENGTH_SHORT).show();
                 return;
             }
             startGame();
         });
     }
 
-    // --- HOST LOGIC ---
-    private void createRoom() {
-        // Generate random 4-digit code
-        int code = new Random().nextInt(9000) + 1000;
-        roomCode = String.valueOf(code);
-        tvRoomTitle.setText("Room Code: " + roomCode);
+    // --- NEW: ASK FOR ROUNDS DIALOG ---
+    private void showCreateRoomDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Tournament Settings");
+        builder.setMessage("How many rounds do you want to play?");
 
-        // Save Room to Firebase
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        input.setText("5"); // Default to 5 rounds
+        builder.setView(input);
+
+        builder.setPositiveButton("Create Room", (dialog, which) -> {
+            String roundsStr = input.getText().toString().trim();
+            int totalRounds = roundsStr.isEmpty() ? 5 : Integer.parseInt(roundsStr);
+
+            // 1. Generate Code
+            int code = new Random().nextInt(9000) + 1000;
+            roomCode = String.valueOf(code);
+            tvRoomTitle.setText("Room Code: " + roomCode);
+
+            // 2. Initialize Firebase for Tournament
+            roomRef = database.getReference("rooms").child(roomCode);
+
+            roomRef.child("status").setValue("waiting");
+            roomRef.child("totalRounds").setValue(totalRounds);
+            roomRef.child("currentRound").setValue(1); // Start at Round 1
+
+            // Add Host
+            roomRef.child("players").child(playerName).child("role").setValue("host");
+            roomRef.child("players").child(playerName).child("score").setValue(0); // Init Score
+
+            addRoomEventListener();
+        });
+
+        builder.setCancelable(false);
+        builder.show();
+    }
+
+    // --- REUSE EXISTING ROOM (NEXT ROUND) ---
+    private void setupExistingRoomAsHost() {
+        tvRoomTitle.setText("Room Code: " + roomCode);
         roomRef = database.getReference("rooms").child(roomCode);
 
-        // Add Host details
-        roomRef.child("players").child(playerName).setValue("host");
+        // Reset status so joiners don't auto-start immediately
         roomRef.child("status").setValue("waiting");
 
-        addRoomEventListener(); // Start listening for other players
+        // Ensure Host is present
+        roomRef.child("players").child(playerName).child("role").setValue("host");
+
+        addRoomEventListener();
     }
 
     // --- JOIN LOGIC ---
     private void showJoinDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Enter Room Code");
-
         final EditText input = new EditText(this);
         builder.setView(input);
 
         builder.setPositiveButton("Join", (dialog, which) -> {
-            roomCode = input.getText().toString();
-            tvRoomTitle.setText("Room Code: " + roomCode);
+            roomCode = input.getText().toString().trim();
             roomRef = database.getReference("rooms").child(roomCode);
 
-            // Check if room exists before joining
             roomRef.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     if (snapshot.exists()) {
-                        // Room exists, add myself
-                        roomRef.child("players").child(playerName).setValue("joiner");
-                        addRoomEventListener(); // Start listening
+                        setupExistingRoomAsJoiner();
                     } else {
-                        Toast.makeText(RoomActivity.this, "Invalid Room Code", Toast.LENGTH_SHORT).show();
-                        finish(); // Go back
+                        Toast.makeText(RoomActivity.this, "Invalid Code", Toast.LENGTH_SHORT).show();
+                        finish();
                     }
                 }
                 @Override
                 public void onCancelled(@NonNull DatabaseError error) {}
             });
         });
-        builder.setCancelable(false); // Force them to enter code
+        builder.setCancelable(false);
         builder.show();
     }
 
-    // --- LISTENER (THE MAGIC) ---
+    private void setupExistingRoomAsJoiner() {
+        tvRoomTitle.setText("Room Code: " + roomCode);
+        roomRef = database.getReference("rooms").child(roomCode);
+
+        roomRef.child("players").child(playerName).child("role").setValue("joiner");
+        // Initialize score safely (using updateChildren to avoid overwriting if exists)
+        // For simplicity here, we just set it if it doesn't exist logic is handled by game flow
+
+        addRoomEventListener();
+    }
+
+    // --- LISTENER ---
     private void addRoomEventListener() {
         roomRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                // 1. Update Player List
                 playerList.clear();
-                Iterable<DataSnapshot> players = snapshot.child("players").getChildren();
-                for (DataSnapshot player : players) {
-                    playerList.add(player.getKey()); // Get the player Name
+                for (DataSnapshot player : snapshot.child("players").getChildren()) {
+                    playerList.add(player.getKey());
                 }
                 adapter.notifyDataSetChanged();
 
-                // 2. Check if Game Started
-// ... inside onDataChange ...
-
-                // 2. Check if Game Started
                 String status = snapshot.child("status").getValue(String.class);
                 if ("playing".equals(status)) {
-                    // STOP listening to the room so we don't open the game twice
                     roomRef.removeEventListener(this);
 
                     Intent intent = new Intent(RoomActivity.this, GameActivity.class);
                     intent.putExtra("roomCode", roomCode);
                     intent.putExtra("playerName", playerName);
+                    intent.putExtra("mode", role); // Pass Host/Joiner status
                     startActivity(intent);
-                    finish(); // Close the lobby
+                    finish();
                 }
             }
-
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
+    // --- START GAME (DYNAMIC ROLES) ---
     private void startGame() {
         List<String> finalRoles = new ArrayList<>();
 
-        // 1. COMPULSORY ROLES (Must always exist)
+        // 1. Core
         finalRoles.add("Sipahi");
         finalRoles.add("Chor");
 
-        // 2. OPTIONAL ROLES POOL
+        // 2. Extra
         List<String> extraRoles = new ArrayList<>();
         extraRoles.add("Raja");
         extraRoles.add("Mantri");
         extraRoles.add("Rani");
         extraRoles.add("Senapati");
-        // Add more if you want support for >6 players (e.g. "Praja")
+        Collections.shuffle(extraRoles);
 
-        // 3. Shuffle options so we pick random ones each time
-        java.util.Collections.shuffle(extraRoles);
-
-        // 4. Fill the remaining spots
-        int playersNeeded = playerList.size() - 2; // -2 because we added Sipahi/Chor
+        // 3. Fill
+        int playersNeeded = playerList.size() - 2;
         for (int i = 0; i < playersNeeded; i++) {
-            // Safety check to ensure we don't run out of roles
-            if (i < extraRoles.size()) {
-                finalRoles.add(extraRoles.get(i));
-            } else {
-                finalRoles.add("Praja"); // Fallback for huge groups
-            }
+            if (i < extraRoles.size()) finalRoles.add(extraRoles.get(i));
+            else finalRoles.add("Praja");
         }
 
-        // 5. Shuffle the FINAL list so assignment is random
-        java.util.Collections.shuffle(finalRoles);
-
-        // 6. Assign to Players in Firebase
+        // 4. Shuffle & Assign
+        Collections.shuffle(finalRoles);
         for (int i = 0; i < playerList.size(); i++) {
             String pName = playerList.get(i);
             String assignedRole = finalRoles.get(i);
             roomRef.child("players").child(pName).child("role").setValue(assignedRole);
+
+            // Ensure every player has a score field if they are new
+            if (role.equals("host")) {
+                // Host initializes scores to 0 if this is Round 1,
+                // but since we track scores in GameActivity, we leave existing scores alone.
+            }
         }
 
-        // 7. Reset Game State for New Round
+        // 5. Trigger Start
         roomRef.child("winner").removeValue();
         roomRef.child("status").setValue("playing");
     }
