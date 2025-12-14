@@ -35,6 +35,7 @@ public class GameActivity extends AppCompatActivity {
     ValueEventListener winnerListener;
     DatabaseReference winnerRef;
     String myMode;
+    TextView tvRoundAnnounce; // Add this with other TextViews
     int currentRound = 1;
     int totalRounds = 1;
 
@@ -51,6 +52,7 @@ public class GameActivity extends AppCompatActivity {
         setContentView(R.layout.activity_game);
 
         // 1. Initialize UI
+        tvRoundAnnounce = findViewById(R.id.tvRoundAnnounce);
         tvInstruction = findViewById(R.id.tvInstruction);
         tvPlayerName = findViewById(R.id.tvPlayerName);
         tvRole = findViewById(R.id.tvRole);
@@ -85,7 +87,12 @@ public class GameActivity extends AppCompatActivity {
                 if (snapshot.hasChild("currentRound") && snapshot.hasChild("totalRounds")) {
                     currentRound = snapshot.child("currentRound").getValue(Integer.class);
                     totalRounds = snapshot.child("totalRounds").getValue(Integer.class);
-                    setTitle("Round " + currentRound + " / " + totalRounds); // Update App Bar
+
+                    // 1. Update Title
+                    setTitle("Round " + currentRound + " / " + totalRounds);
+
+                    // 2. TRIGGER ANIMATION HERE
+                    playRoundAnimation(currentRound);
                 }
             }
             @Override
@@ -340,6 +347,33 @@ public class GameActivity extends AppCompatActivity {
         if (winnerRef != null && winnerListener != null) {
             winnerRef.removeEventListener(winnerListener);
         }
+    }
+
+    private void playRoundAnimation(int roundNum) {
+        tvRoundAnnounce.setText("Round " + roundNum);
+        tvRoundAnnounce.setVisibility(View.VISIBLE);
+        tvRoundAnnounce.setAlpha(0f);
+        tvRoundAnnounce.setScaleX(0.5f);
+        tvRoundAnnounce.setScaleY(0.5f);
+
+        // Animation: Fade In + Scale Up -> Wait -> Fade Out
+        tvRoundAnnounce.animate()
+                .alpha(1f)
+                .scaleX(1.2f)
+                .scaleY(1.2f)
+                .setDuration(800) // 0.8 seconds to appear
+                .withEndAction(() -> {
+                    // Wait a bit, then disappear
+                    tvRoundAnnounce.animate()
+                            .alpha(0f)
+                            .scaleX(1.5f) // Keep growing while fading
+                            .scaleY(1.5f)
+                            .setStartDelay(500) // Stay visible for 0.5s
+                            .setDuration(500)   // Fade out speed
+                            .withEndAction(() -> tvRoundAnnounce.setVisibility(View.GONE))
+                            .start();
+                })
+                .start();
     }
 
 }
