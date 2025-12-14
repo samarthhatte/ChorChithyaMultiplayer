@@ -86,7 +86,7 @@ public class RoomActivity extends AppCompatActivity {
             }
             // CASE B: Brand New Game -> Ask for Rounds
             else {
-                showCreateRoomDialog();
+                showCreateRoomDialog(); // <--- UPDATED THIS CALL
             }
         }
         // 5. Joiner Logic
@@ -129,7 +129,7 @@ public class RoomActivity extends AppCompatActivity {
 
         final EditText input = new EditText(this);
         input.setInputType(InputType.TYPE_CLASS_NUMBER);
-        input.setText("5"); // Default to 5 rounds
+        input.setText("5"); // Default value
         builder.setView(input);
 
         builder.setPositiveButton("Create Room", (dialog, which) -> {
@@ -141,38 +141,20 @@ public class RoomActivity extends AppCompatActivity {
             roomCode = String.valueOf(code);
             tvRoomTitle.setText("Room Code: " + roomCode);
 
-            // 2. Initialize Firebase for Tournament
+            // 2. Initialize Firebase
             roomRef = database.getReference("rooms").child(roomCode);
 
-            // Inside onCreate...
-
-// 1. Host Logic
-            if (role.equals("host")) {
-                // ... existing host setup ...
-                setupExistingRoomAsHost();
-
-                // ADD THIS: If Host leaves, destroy the room status so game ends
-                roomRef.child("status").onDisconnect().setValue("closed");
-            }
-// 2. Joiner Logic
-            else {
-                if (roomCode != null && !roomCode.isEmpty()) {
-                    setupExistingRoomAsJoiner();
-
-                    // ADD THIS: If Joiner leaves, remove ONLY their name
-                    roomRef.child("players").child(playerName).onDisconnect().removeValue();
-                } else {
-                    showJoinDialog();
-                }
-            }
-
+            // Set Room Config
             roomRef.child("status").setValue("waiting");
             roomRef.child("totalRounds").setValue(totalRounds);
-            roomRef.child("currentRound").setValue(1); // Start at Round 1
+            roomRef.child("currentRound").setValue(1);
 
-            // Add Host
+            // Set Host Data
             roomRef.child("players").child(playerName).child("role").setValue("host");
-            roomRef.child("players").child(playerName).child("score").setValue(0); // Init Score
+            roomRef.child("players").child(playerName).child("score").setValue(0);
+
+            // Disconnect Safety for Host (Deletes status so game closes)
+            roomRef.child("status").onDisconnect().setValue("closed");
 
             addRoomEventListener();
         });
@@ -192,6 +174,9 @@ public class RoomActivity extends AppCompatActivity {
         // Ensure Host is present
         roomRef.child("players").child(playerName).child("role").setValue("host");
 
+        // Ensure Safety Listener is back
+        roomRef.child("status").onDisconnect().setValue("closed");
+
         addRoomEventListener();
     }
 
@@ -210,12 +195,6 @@ public class RoomActivity extends AppCompatActivity {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     if (snapshot.exists()) {
-                        roomRef.child("players").child(playerName).setValue("joiner");
-
-                        // ADD THIS: Auto-remove if I crash/close
-                        roomRef.child("players").child(playerName).onDisconnect().removeValue();
-
-                        addRoomEventListener();
                         setupExistingRoomAsJoiner();
                     } else {
                         Toast.makeText(RoomActivity.this, "Invalid Code", Toast.LENGTH_SHORT).show();
@@ -235,8 +214,9 @@ public class RoomActivity extends AppCompatActivity {
         roomRef = database.getReference("rooms").child(roomCode);
 
         roomRef.child("players").child(playerName).child("role").setValue("joiner");
-        // Initialize score safely (using updateChildren to avoid overwriting if exists)
-        // For simplicity here, we just set it if it doesn't exist logic is handled by game flow
+
+        // IMPORTANT: Disconnect Safety for Joiner (Only remove my name)
+        roomRef.child("players").child(playerName).onDisconnect().removeValue();
 
         addRoomEventListener();
     }
@@ -246,13 +226,23 @@ public class RoomActivity extends AppCompatActivity {
         roomRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                // Update Player List
                 playerList.clear();
                 for (DataSnapshot player : snapshot.child("players").getChildren()) {
                     playerList.add(player.getKey());
                 }
                 adapter.notifyDataSetChanged();
 
+                // Check Status
                 String status = snapshot.child("status").getValue(String.class);
+
+                // If Host closed the game, kick everyone out
+                if ("closed".equals(status)) {
+                    Toast.makeText(RoomActivity.this, "Host closed the room", Toast.LENGTH_LONG).show();
+                    finish();
+                    return;
+                }
+
                 if ("playing".equals(status)) {
                     roomRef.removeEventListener(this);
 
@@ -299,11 +289,7 @@ public class RoomActivity extends AppCompatActivity {
             String assignedRole = finalRoles.get(i);
             roomRef.child("players").child(pName).child("role").setValue(assignedRole);
 
-            // Ensure every player has a score field if they are new
-            if (role.equals("host")) {
-                // Host initializes scores to 0 if this is Round 1,
-                // but since we track scores in GameActivity, we leave existing scores alone.
-            }
+            // Note: We don't reset scores here because we want them to accumulate!
         }
 
         // 5. Trigger Start
