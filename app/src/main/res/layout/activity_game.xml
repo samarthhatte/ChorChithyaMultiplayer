@@ -123,4 +123,19 @@
         android:textColor="@color/text_primary"
         android:layout_marginTop="10dp"/>
 
+    <TextView
+        android:id="@+id/tvRoundAnnounce"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Round 1"
+        android:textSize="50sp"
+        android:textStyle="bold"
+        android:textColor="#D84315"
+        android:background="#FFFFFF"
+        android:padding="20dp"
+        android:elevation="20dp"
+        android:visibility="gone"
+        android:layout_gravity="center"
+        android:layout_marginTop="-300dp"/>
+
 </LinearLayout>

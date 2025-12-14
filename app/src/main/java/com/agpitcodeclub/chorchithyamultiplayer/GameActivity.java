@@ -35,11 +35,15 @@ public class GameActivity extends AppCompatActivity {
     ValueEventListener winnerListener;
     DatabaseReference winnerRef;
     String myMode;
+    TextView tvRoundAnnounce;
     int currentRound = 1;
     int totalRounds = 1;
 
     String roomCode, playerName, myRole;
     boolean isRevealed = false;
+
+    // isReady is not tracked in this activity, it's tracked in RoomActivity
+    // boolean isReady = false;
 
     DatabaseReference roomRef;
     List<String> suspectsList = new ArrayList<>();
@@ -51,6 +55,7 @@ public class GameActivity extends AppCompatActivity {
         setContentView(R.layout.activity_game);
 
         // 1. Initialize UI
+        tvRoundAnnounce = findViewById(R.id.tvRoundAnnounce);
         tvInstruction = findViewById(R.id.tvInstruction);
         tvPlayerName = findViewById(R.id.tvPlayerName);
         tvRole = findViewById(R.id.tvRole);
@@ -74,7 +79,7 @@ public class GameActivity extends AppCompatActivity {
         playerName = getIntent().getStringExtra("playerName");
         tvPlayerName.setText("Hi, " + playerName);
         myMode = getIntent().getStringExtra("mode");
-        mode = getIntent().getStringExtra("mode"); // <--- ADD THIS LINE (Crucial!)
+        mode = getIntent().getStringExtra("mode");
 
         roomRef = FirebaseDatabase.getInstance().getReference("rooms").child(roomCode);
 
@@ -85,14 +90,19 @@ public class GameActivity extends AppCompatActivity {
                 if (snapshot.hasChild("currentRound") && snapshot.hasChild("totalRounds")) {
                     currentRound = snapshot.child("currentRound").getValue(Integer.class);
                     totalRounds = snapshot.child("totalRounds").getValue(Integer.class);
-                    setTitle("Round " + currentRound + " / " + totalRounds); // Update App Bar
+
+                    // 1. Update Title
+                    setTitle("Round " + currentRound + " / " + totalRounds);
+
+                    // 2. TRIGGER ANIMATION HERE
+                    playRoundAnimation(currentRound);
                 }
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
         });
 
-        // 3. Update Click Listener
+        // 3. Update Click Listener (Card Reveal)
         cardView.setOnClickListener(v -> {
             if (!isRevealed) {
                 // REVEAL
@@ -141,7 +151,6 @@ public class GameActivity extends AppCompatActivity {
     // --- SIPAHI LOGIC ---
     private void setupSipahiUI() {
         layoutSipahiGuess.setVisibility(View.VISIBLE); // Show the guessing area
-
         tvInstruction.setVisibility(View.GONE);
 
         // Load other players into the list
@@ -192,6 +201,7 @@ public class GameActivity extends AppCompatActivity {
         });
     }
 
+    // --- GAME OVER & NEXT ROUND LOGIC ---
     private void showGameOverDialog(String winner) {
         String message = "Sipahi".equals(winner) ? "Sipahi Wins!" : "Chor Wins!";
 
@@ -209,22 +219,48 @@ public class GameActivity extends AppCompatActivity {
             // --- NOT FINISHED: Show "Next Round" ---
             builder.setTitle("Round " + currentRound + " Over");
             builder.setMessage(message);
+
+            // 🔑 UPDATED POSITIVE BUTTON LOGIC FOR ROSTER SAVING
             builder.setPositiveButton("Next Round", (dialog, which) -> {
                 if (roomRef != null) {
                     roomRef.child("winner").removeValue();
-
-                    // CRITICAL FIX: Everyone forces status to 'waiting' when leaving
-                    // This ensures that when you land in the Lobby, it doesn't bounce you back.
                     roomRef.child("status").setValue("waiting");
                 }
 
-                // Host increments round number (Only Host Logic)
-                if ("host".equals(myMode)) {
-                    roomRef.child("currentRound").setValue(currentRound + 1);
-                }
+                // 1. Get the list of players currently in the room
+                roomRef.child("players").addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        List<String> lastPlayerRoster = new ArrayList<>();
+                        for (DataSnapshot player : snapshot.getChildren()) {
+                            lastPlayerRoster.add(player.getKey());
+                        }
 
-                goToLobby();
+                        // 2. CRITICAL: Save this roster to Firebase
+                        roomRef.child("lastPlayerRoster").setValue(lastPlayerRoster)
+                                .addOnCompleteListener(task -> {
+                                    // This block executes ONLY after the roster is saved!
+
+                                    // 3. Host increments round number (Only Host Logic)
+                                    if ("host".equals(myMode)) {
+                                        // The round increment must happen AFTER saving the roster,
+                                        // so RoomActivity can pick up the correct round number.
+                                        roomRef.child("currentRound").setValue(currentRound + 1);
+                                    }
+
+                                    // 4. Send everyone to the lobby
+                                    goToLobby();
+                                });
+                    }
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Toast.makeText(GameActivity.this, "Error saving player roster.", Toast.LENGTH_SHORT).show();
+                        // Fallback: If roster save fails, still send to lobby to prevent lockup
+                        goToLobby();
+                    }
+                });
             });
+
         } else {
             // --- FINISHED: Show "See Results" ---
             builder.setTitle("Tournament Finished!");
@@ -340,6 +376,33 @@ public class GameActivity extends AppCompatActivity {
         if (winnerRef != null && winnerListener != null) {
             winnerRef.removeEventListener(winnerListener);
         }
+    }
+
+    private void playRoundAnimation(int roundNum) {
+        tvRoundAnnounce.setText("Round " + roundNum);
+        tvRoundAnnounce.setVisibility(View.VISIBLE);
+        tvRoundAnnounce.setAlpha(0f);
+        tvRoundAnnounce.setScaleX(0.5f);
+        tvRoundAnnounce.setScaleY(0.5f);
+
+        // Animation: Fade In + Scale Up -> Wait -> Fade Out
+        tvRoundAnnounce.animate()
+                .alpha(1f)
+                .scaleX(1.2f)
+                .scaleY(1.2f)
+                .setDuration(800) // 0.8 seconds to appear
+                .withEndAction(() -> {
+                    // Wait a bit, then disappear
+                    tvRoundAnnounce.animate()
+                            .alpha(0f)
+                            .scaleX(1.5f) // Keep growing while fading
+                            .scaleY(1.5f)
+                            .setStartDelay(500) // Stay visible for 0.5s
+                            .setDuration(500)   // Fade out speed
+                            .withEndAction(() -> tvRoundAnnounce.setVisibility(View.GONE))
+                            .start();
+                })
+                .start();
     }
 
 }
