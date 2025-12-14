@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "563452541914",
+    "firebase_url": "https://chor-chithya-multiplayer-default-rtdb.firebaseio.com",
     "project_id": "chor-chithya-multiplayer",
     "storage_bucket": "chor-chithya-multiplayer.firebasestorage.app"
   },
