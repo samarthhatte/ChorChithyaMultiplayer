@@ -144,6 +144,28 @@ public class RoomActivity extends AppCompatActivity {
             // 2. Initialize Firebase for Tournament
             roomRef = database.getReference("rooms").child(roomCode);
 
+            // Inside onCreate...
+
+// 1. Host Logic
+            if (role.equals("host")) {
+                // ... existing host setup ...
+                setupExistingRoomAsHost();
+
+                // ADD THIS: If Host leaves, destroy the room status so game ends
+                roomRef.child("status").onDisconnect().setValue("closed");
+            }
+// 2. Joiner Logic
+            else {
+                if (roomCode != null && !roomCode.isEmpty()) {
+                    setupExistingRoomAsJoiner();
+
+                    // ADD THIS: If Joiner leaves, remove ONLY their name
+                    roomRef.child("players").child(playerName).onDisconnect().removeValue();
+                } else {
+                    showJoinDialog();
+                }
+            }
+
             roomRef.child("status").setValue("waiting");
             roomRef.child("totalRounds").setValue(totalRounds);
             roomRef.child("currentRound").setValue(1); // Start at Round 1
@@ -188,6 +210,12 @@ public class RoomActivity extends AppCompatActivity {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     if (snapshot.exists()) {
+                        roomRef.child("players").child(playerName).setValue("joiner");
+
+                        // ADD THIS: Auto-remove if I crash/close
+                        roomRef.child("players").child(playerName).onDisconnect().removeValue();
+
+                        addRoomEventListener();
                         setupExistingRoomAsJoiner();
                     } else {
                         Toast.makeText(RoomActivity.this, "Invalid Code", Toast.LENGTH_SHORT).show();

@@ -210,14 +210,20 @@ public class GameActivity extends AppCompatActivity {
             builder.setTitle("Round " + currentRound + " Over");
             builder.setMessage(message);
             builder.setPositiveButton("Next Round", (dialog, which) -> {
-                if (roomRef != null) roomRef.child("winner").removeValue();
+                if (roomRef != null) {
+                    roomRef.child("winner").removeValue();
 
-                // Host increments round number
+                    // CRITICAL FIX: Everyone forces status to 'waiting' when leaving
+                    // This ensures that when you land in the Lobby, it doesn't bounce you back.
+                    roomRef.child("status").setValue("waiting");
+                }
+
+                // Host increments round number (Only Host Logic)
                 if ("host".equals(myMode)) {
                     roomRef.child("currentRound").setValue(currentRound + 1);
                 }
 
-                goToLobby(); // Helper method to switch screens
+                goToLobby();
             });
         } else {
             // --- FINISHED: Show "See Results" ---
