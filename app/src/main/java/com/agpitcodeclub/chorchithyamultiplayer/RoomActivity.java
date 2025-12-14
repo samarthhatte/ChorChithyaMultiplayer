@@ -189,41 +189,46 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     private void startGame() {
-        List<String> roles = new ArrayList<>();
-        int playerCount = playerList.size();
+        List<String> finalRoles = new ArrayList<>();
 
-        // 1. The Core Roles (Always needed for the game to work)
-        roles.add("Sipahi"); // The Guesser
-        roles.add("Chor");   // The Target
+        // 1. COMPULSORY ROLES (Must always exist)
+        finalRoles.add("Sipahi");
+        finalRoles.add("Chor");
 
-        // 2. Add roles based on player count
-        if (playerCount >= 3) {
-            roles.add("Raja");
-        }
-        if (playerCount >= 4) {
-            roles.add("Mantri");
-        }
-        if (playerCount >= 5) {
-            roles.add("Rani");
-        }
-        if (playerCount >= 6) {
-            roles.add("Senapati");
+        // 2. OPTIONAL ROLES POOL
+        List<String> extraRoles = new ArrayList<>();
+        extraRoles.add("Raja");
+        extraRoles.add("Mantri");
+        extraRoles.add("Rani");
+        extraRoles.add("Senapati");
+        // Add more if you want support for >6 players (e.g. "Praja")
+
+        // 3. Shuffle options so we pick random ones each time
+        java.util.Collections.shuffle(extraRoles);
+
+        // 4. Fill the remaining spots
+        int playersNeeded = playerList.size() - 2; // -2 because we added Sipahi/Chor
+        for (int i = 0; i < playersNeeded; i++) {
+            // Safety check to ensure we don't run out of roles
+            if (i < extraRoles.size()) {
+                finalRoles.add(extraRoles.get(i));
+            } else {
+                finalRoles.add("Praja"); // Fallback for huge groups
+            }
         }
 
-        // 3. Shuffle (Crucial so no one knows who is what)
-        java.util.Collections.shuffle(roles);
+        // 5. Shuffle the FINAL list so assignment is random
+        java.util.Collections.shuffle(finalRoles);
 
-        // 4. Assign to Players in Firebase
-        for (int i = 0; i < playerCount; i++) {
+        // 6. Assign to Players in Firebase
+        for (int i = 0; i < playerList.size(); i++) {
             String pName = playerList.get(i);
-            String assignedRole = roles.get(i);
-
-            // Save to Firebase
+            String assignedRole = finalRoles.get(i);
             roomRef.child("players").child(pName).child("role").setValue(assignedRole);
         }
 
-        // 5. Reset Game State
-        roomRef.child("winner").removeValue(); // Clear old winner
-        roomRef.child("status").setValue("playing"); // Start the game!
+        // 7. Reset Game State for New Round
+        roomRef.child("winner").removeValue();
+        roomRef.child("status").setValue("playing");
     }
 }

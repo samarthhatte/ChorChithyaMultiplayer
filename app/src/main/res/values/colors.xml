@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#6200EE</color>
+    <color name="purple_700">#3700B3</color>
+    <color name="teal_200">#03DAC5</color>
+    <color name="teal_700">#018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-</resources>
+    <color name="game_background">#FFF3E0</color> <color name="text_primary">#5D4037</color> <color name="text_secondary">#D84315</color> <color name="card_back">#FF5722</color> <color name="card_face">#FFFFFF</color> <color name="card_text_color">#3E2723</color> <color name="police_banner_bg">#E0F7FA</color> <color name="police_banner_text">#006064</color> </resources>

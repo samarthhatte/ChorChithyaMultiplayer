@@ -1,5 +1,6 @@
 package com.agpitcodeclub.chorchithyamultiplayer;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -28,6 +29,8 @@ public class GameActivity extends AppCompatActivity {
     CardView cardView;
     LinearLayout layoutSipahiGuess;
     ListView listViewSuspects;
+    TextView tvPoliceName;
+    LinearLayout cardLayout;
 
     String roomCode, playerName, myRole;
     boolean isRevealed = false;
@@ -41,6 +44,13 @@ public class GameActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
 
+        // 1. Get colors safely using ContextCompat
+        int colorCardBack = androidx.core.content.ContextCompat.getColor(this, R.color.card_back);
+        int colorCardFace = androidx.core.content.ContextCompat.getColor(this, R.color.card_face);
+
+        // 2. Set Initial State
+        cardLayout.setBackgroundColor(colorCardBack);
+
         // 1. Initialize UI
         tvInstruction = findViewById(R.id.tvInstruction);
         tvPlayerName = findViewById(R.id.tvPlayerName);
@@ -50,6 +60,8 @@ public class GameActivity extends AppCompatActivity {
         cardView = findViewById(R.id.cardViewRole);
         layoutSipahiGuess = findViewById(R.id.layoutSipahiGuess);
         listViewSuspects = findViewById(R.id.listViewSuspects);
+        tvPoliceName = findViewById(R.id.tvPoliceName);
+        cardLayout = findViewById(R.id.cardLayout);
 
         // 2. Get Intent Data
         roomCode = getIntent().getStringExtra("roomCode");
@@ -58,21 +70,30 @@ public class GameActivity extends AppCompatActivity {
 
         roomRef = FirebaseDatabase.getInstance().getReference("rooms").child(roomCode);
 
-        // 3. Reveal Card Logic
+        // 3. Update Click Listener
         cardView.setOnClickListener(v -> {
             if (!isRevealed) {
+                // REVEAL
                 tvHiddenText.setVisibility(View.GONE);
+                findViewById(R.id.imgHiddenIcon).setVisibility(View.GONE);
                 tvRole.setVisibility(View.VISIBLE);
+
+                cardLayout.setBackgroundColor(colorCardFace); // Use Dynamic Face Color
                 isRevealed = true;
             } else {
+                // HIDE
                 tvHiddenText.setVisibility(View.VISIBLE);
+                findViewById(R.id.imgHiddenIcon).setVisibility(View.VISIBLE);
                 tvRole.setVisibility(View.GONE);
+
+                cardLayout.setBackgroundColor(colorCardBack); // Use Dynamic Back Color
                 isRevealed = false;
             }
         });
 
         // 4. Fetch My Role & Game Status
         fetchMyRole();
+        findAndShowPolice();
         listenForWinner();
     }
 
@@ -166,25 +187,33 @@ public class GameActivity extends AppCompatActivity {
 
     private void showGameOverDialog(String winner) {
         String message = "";
-        if ("Sipahi".equals(winner)) {
-            message = "Sipahi Caught the Thief!\nSipahi Wins!";
-        } else {
-            message = "Wrong Guess!\nChor Wins!";
-        }
+        if ("Sipahi".equals(winner)) message = "Sipahi Wins!";
+        else message = "Chor Wins!";
 
         tvResult.setText(message);
         tvResult.setVisibility(View.VISIBLE);
-
         tvInstruction.setVisibility(View.GONE);
 
-        // CALL THE SCORING FUNCTION HERE:
-        updateScores(winner);
+        updateScores(winner); // Calculate points
 
-        new AlertDialog.Builder(this)
-                .setTitle("Game Over")
-                .setMessage(message)
-                .setPositiveButton("OK", null)
-                .show();
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Round Over");
+        builder.setMessage(message);
+        builder.setCancelable(false); // Can't click outside
+
+        // BUTTON 1: "Next Round" (Only works for Host, but we show for all for simplicity)
+        builder.setPositiveButton("Next Round", (dialog, which) -> {
+            // Go back to Lobby (RoomActivity) to shuffle again
+            // We use flags to clear the activity stack so it feels like a reset
+            Intent intent = new Intent(GameActivity.this, RoomActivity.class);
+            intent.putExtra("playerName", playerName);
+            intent.putExtra("mode", "host"); // Assuming they stay host
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            finish();
+        });
+
+        builder.show();
     }
 
     private void updateScores(String winnerRole) {
@@ -211,6 +240,24 @@ public class GameActivity extends AppCompatActivity {
 
         // Optional: Save to Firebase to track total score across rounds
         // roomRef.child("players").child(playerName).child("score").setValue(currentScore + myPoints);
+    }
+
+    private void findAndShowPolice() {
+        roomRef.child("players").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                for (DataSnapshot player : snapshot.getChildren()) {
+                    String r = player.child("role").getValue(String.class);
+                    String name = player.getKey(); // Get Player Name
+
+                    if ("Sipahi".equals(r)) {
+                        tvPoliceName.setText("👮 Police is: " + name);
+                    }
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
     }
 
 }
