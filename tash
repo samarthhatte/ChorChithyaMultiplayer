@@ -1,0 +1,14 @@
+[33mb7d6c39[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mFeature[m[33m, [m[1;31morigin/Feature[m[33m)[m feat: Bump version code to 2 and version name to 1.1 in build.gradle.kts
+[33m90641dd[m feat: Update Dashboard UI with final results display and sorting logic; add internet permission
+[33m55020af[m feat: Add migration state XML files for agent, ask, ask2agent, and edit components
+[33ma438c33[m feat: Enhance room UI with status display and ready button; update deployment target to SDK 35
+[33m92e8ff6[m feat: Add round announcement UI and animation logic
+[33m1f825e7[m feat: Refactor room management logic and enhance disconnect safety for players
+[33m9762a80[m feat: Change deployment target selection mode to dialog and update device identifiers
+[33ma3328f9[m feat: Update deployment target selection and enhance room management logic
+[33maa224d8[m added the rounds
+[33m3e4a36f[m feat: Add dynamic rounds, role logic, and dark mode UI
+[33m0a03fbe[m Updated the member logic
+[33m6213919[m Json Updated for Room Joining Error
+[33m40e7c1d[m Json Updated for Room Joining Error
+[33mb458eda[m[33m ([m[1;33mtag: [m[1;33mAndroid[m[33m)[m Initial commit

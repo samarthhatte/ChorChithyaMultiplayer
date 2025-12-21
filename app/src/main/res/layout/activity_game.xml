@@ -1,141 +1,159 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center_horizontal"
-    android:padding="20dp"
-    android:background="@color/game_background"> <androidx.cardview.widget.CardView
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginBottom="20dp"
-    app:cardBackgroundColor="@color/police_banner_bg"
-    app:cardCornerRadius="10dp"
-    app:cardElevation="4dp">
-    <TextView
-        android:id="@+id/tvPoliceName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Searching for Police..."
-        android:padding="15dp"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="@color/police_banner_text"
-        android:drawablePadding="10dp"
-        android:layout_gravity="center"
-        app:drawableStartCompat="@android:drawable/ic_menu_search" />
-</androidx.cardview.widget.CardView>
-
-    <TextView
-        android:id="@+id/tvPlayerName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Your Name"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_primary"
-        android:layout_marginBottom="20dp"/>
-
-    <androidx.cardview.widget.CardView
-        android:id="@+id/cardViewRole"
-        android:layout_width="300dp"
-        android:layout_height="400dp"
-        android:layout_marginBottom="20dp"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="10dp"
-        android:clickable="true"
-        android:foreground="?android:attr/selectableItemBackground">
-
-        <LinearLayout
-            android:id="@+id/cardLayout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:gravity="center">
-
-            <ImageView
-                android:id="@+id/imgHiddenIcon"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:src="@android:drawable/ic_dialog_email"
-                app:tint="@color/white"/>
-
-            <TextView
-                android:id="@+id/tvHiddenText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="TAP TO REVEAL"
-                android:textSize="26sp"
-                android:textStyle="bold"
-                android:textColor="@color/white"
-                android:layout_marginTop="20dp"/>
-
-            <TextView
-                android:id="@+id/tvRole"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ROLE"
-                android:textSize="45sp"
-                android:textStyle="bold"
-                android:textColor="@color/card_text_color"
-                android:visibility="gone"/>
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
-
-    <TextView
-        android:id="@+id/tvInstruction"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Keep this secret!"
-        android:textColor="@color/text_secondary"
-        android:textSize="18sp"
-        android:textStyle="italic"/>
+    android:fillViewport="true"
+    android:background="@color/game_background">
 
     <LinearLayout
-        android:id="@+id/layoutSipahiGuess"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:visibility="gone"
-        android:layout_marginTop="10dp"
-        android:background="@drawable/rounded_bg"
-        android:padding="10dp">
+        android:gravity="center_horizontal"
+        android:padding="20dp">
+
+        <!-- ✅ YOUR ORIGINAL CONTENT STARTS HERE -->
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            app:cardBackgroundColor="@color/police_banner_bg"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="4dp">
+
+            <TextView
+                android:id="@+id/tvPoliceName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Searching for Police..."
+                android:padding="15dp"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/police_banner_text"
+                android:drawablePadding="10dp"
+                android:layout_gravity="center"
+                app:drawableStartCompat="@android:drawable/ic_menu_search" />
+        </androidx.cardview.widget.CardView>
+
         <TextView
+            android:id="@+id/tvPlayerName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Tap the Chor:"
+            android:text="Your Name"
+            android:textSize="22sp"
             android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginBottom="20dp"/>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardViewRole"
+            android:layout_width="300dp"
+            android:layout_height="400dp"
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="10dp"
+            android:clickable="true"
+            android:foreground="?android:attr/selectableItemBackground">
+
+            <LinearLayout
+                android:id="@+id/cardLayout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <ImageView
+                    android:id="@+id/imgHiddenIcon"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:src="@android:drawable/ic_dialog_email"
+                    app:tint="@color/white"/>
+
+                <TextView
+                    android:id="@+id/tvHiddenText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="TAP TO REVEAL"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    android:layout_marginTop="20dp"/>
+
+                <TextView
+                    android:id="@+id/tvRole"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ROLE"
+                    android:textSize="45sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/card_text_color"
+                    android:visibility="gone"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            android:id="@+id/tvInstruction"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Keep this secret!"
+            android:textColor="@color/text_secondary"
             android:textSize="18sp"
-            android:textColor="#F44336"/> <ListView
-        android:id="@+id/listViewSuspects"
-        android:layout_width="match_parent"
-        android:layout_height="150dp"/>
+            android:textStyle="italic"/>
+
+        <LinearLayout
+            android:id="@+id/layoutSipahiGuess"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/rounded_bg"
+            android:padding="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tap the Chor:"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:textColor="#F44336"/>
+
+            <!-- 🔴 IMPORTANT FIX BELOW -->
+            <ListView
+                android:id="@+id/listViewSuspects"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="true"/>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvResult"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginTop="10dp"/>
+
+        <TextView
+            android:id="@+id/tvRoundAnnounce"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Round 1"
+            android:textSize="50sp"
+            android:textStyle="bold"
+            android:textColor="#D84315"
+            android:background="#FFFFFF"
+            android:padding="20dp"
+            android:elevation="20dp"
+            android:visibility="gone"
+            android:layout_gravity="center"
+            android:layout_marginTop="-300dp"/>
+
+        <!-- ✅ YOUR ORIGINAL CONTENT ENDS HERE -->
+
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/tvResult"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_primary"
-        android:layout_marginTop="10dp"/>
-
-    <TextView
-        android:id="@+id/tvRoundAnnounce"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Round 1"
-        android:textSize="50sp"
-        android:textStyle="bold"
-        android:textColor="#D84315"
-        android:background="#FFFFFF"
-        android:padding="20dp"
-        android:elevation="20dp"
-        android:visibility="gone"
-        android:layout_gravity="center"
-        android:layout_marginTop="-300dp"/>
-
-</LinearLayout>
+</ScrollView>
