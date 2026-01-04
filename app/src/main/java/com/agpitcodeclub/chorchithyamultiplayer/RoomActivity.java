@@ -59,8 +59,9 @@ public class RoomActivity extends AppCompatActivity {
         database = FirebaseDatabase.getInstance();
 
         playerList = new ArrayList<>();
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, playerList);
+        adapter = new ArrayAdapter<String>(this, R.layout.item_player, R.id.tvPlayerName, playerList);
         listViewPlayers.setAdapter(adapter);
+
 
         // 3. Get Data Safely
         Bundle extras = getIntent().getExtras();
