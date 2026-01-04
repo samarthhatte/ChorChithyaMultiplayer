@@ -34,7 +34,7 @@
         android:text="Your Name"
         android:textSize="22sp"
         android:textStyle="bold"
-        android:textColor="@color/text_primary"
+        android:textColor="#212121"
         android:layout_marginBottom="20dp"/>
 
     <androidx.cardview.widget.CardView
@@ -88,7 +88,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Keep this secret!"
-        android:textColor="@color/text_secondary"
+        android:textColor="#382621"
         android:textSize="18sp"
         android:textStyle="italic"/>
 
@@ -107,7 +107,9 @@
             android:text="Tap the Chor:"
             android:textStyle="bold"
             android:textSize="18sp"
-            android:textColor="#F44336"/> <ListView
+            android:textColor="#F44336"/>
+
+        <ListView
         android:id="@+id/listViewSuspects"
         android:layout_width="match_parent"
         android:layout_height="150dp"/>

@@ -14,7 +14,7 @@
         android:text="Room Code: ..."
         android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="#3E2723"
+        android:textColor="#212121"
         android:layout_marginBottom="10dp"/>
 
     <TextView
@@ -24,31 +24,43 @@
         android:text="Waiting for players..."
         android:textSize="18sp"
         android:textStyle="bold"
+        android:textColor="#382621"
         android:layout_marginBottom="20dp"/>
 
-    <ListView
-        android:id="@+id/listViewPlayers"
+    <!-- Player List Container -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:background="#FFF9C4"
-        android:layout_marginBottom="20dp"/>
+        android:padding="10dp"
+        android:layout_marginBottom="20dp">
+
+        <ListView
+            android:id="@+id/listViewPlayers"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:dividerHeight="8dp"
+            android:background="@android:color/transparent"/>
+    </LinearLayout>
 
     <Button
         android:id="@+id/btnShare"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="50dp"
         android:text="Invite via WhatsApp"
+        android:textStyle="bold"
         android:backgroundTint="#25D366"
-        android:textColor="#FFFFFF"/>
+        android:textColor="#382621"/>
 
     <Button
         android:id="@+id/btnReady"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="52dp"
         android:text="I AM READY"
+        android:textStyle="bold"
         android:backgroundTint="#FF9800"
-        android:textColor="#FFFFFF"
+        android:textColor="#382621"
         android:layout_marginTop="10dp"
         android:layout_marginBottom="10dp"
         android:visibility="visible"/>
@@ -56,9 +68,10 @@
     <Button
         android:id="@+id/btnStartGame"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="52dp"
         android:text="Start Game"
+        android:textStyle="bold"
         android:backgroundTint="#FF5722"
-        android:textColor="#FFFFFF"
+        android:textColor="#382621"
         android:visibility="gone"/>
 </LinearLayout>

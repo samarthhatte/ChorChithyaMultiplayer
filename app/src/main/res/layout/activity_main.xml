@@ -5,13 +5,15 @@
     android:orientation="vertical"
     android:gravity="center"
     android:padding="24dp"
-    android:background="#FFEB3B"> <TextView
+    android:background="#FFEB3B">
+
+    <TextView
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:text="Chor Chithya"
     android:textSize="32sp"
     android:textStyle="bold"
-    android:textColor="#3E2723"
+    android:textColor="#212121"
     android:layout_marginBottom="8dp"/>
 
     <TextView
@@ -19,7 +21,7 @@
         android:layout_height="wrap_content"
         android:text="Multiplayer"
         android:textSize="18sp"
-        android:textColor="#5D4037"
+        android:textColor="#382621"
         android:layout_marginBottom="40dp"/>
 
     <EditText
@@ -38,7 +40,7 @@
         android:layout_height="60dp"
         android:text="Create New Room"
         android:backgroundTint="#FF5722"
-        android:textColor="#FFFFFF"
+        android:textColor="#382621"
         android:layout_marginBottom="10dp"/>
 
     <Button
@@ -47,6 +49,6 @@
         android:layout_height="60dp"
         android:text="Join Existing Room"
         android:backgroundTint="#4CAF50"
-        android:textColor="#FFFFFF"/>
+        android:textColor="#382621"/>
 
 </LinearLayout>
