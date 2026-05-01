@@ -15,6 +15,10 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -48,6 +52,15 @@ public class RoomActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_room);
 
+        // Java
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+
         // 1. Initialize UI
         tvRoomTitle = findViewById(R.id.tvRoomTitle);
         tvStatus = findViewById(R.id.tvStatus); // <--- NEW
@@ -59,7 +72,7 @@ public class RoomActivity extends AppCompatActivity {
         database = FirebaseDatabase.getInstance();
 
         playerList = new ArrayList<>();
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, playerList);
+        adapter = new ArrayAdapter<>(this, R.layout.player_list_item, playerList);
         listViewPlayers.setAdapter(adapter);
 
         // 3. Get Data Safely
@@ -198,7 +211,8 @@ public class RoomActivity extends AppCompatActivity {
             roomRef.child("status").onDisconnect().setValue("closed");
             addRoomEventListener();
         });
-        builder.setCancelable(false);
+        // Change this in showCreateRoomDialog and showJoinDialog
+        builder.setCancelable(true);
         builder.show();
     }
 
@@ -219,6 +233,9 @@ public class RoomActivity extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Enter Room Code");
         final EditText input = new EditText(this);
+        // Fix visibility for Dark Mode
+        input.setTextColor(Color.BLACK);
+        input.setHintTextColor(Color.GRAY);
         builder.setView(input);
         builder.setPositiveButton("Join", (dialog, which) -> {
             roomCode = input.getText().toString().trim();
@@ -240,7 +257,7 @@ public class RoomActivity extends AppCompatActivity {
                 public void onCancelled(@NonNull DatabaseError error) {}
             });
         });
-        builder.setCancelable(false);
+        builder.setCancelable(true);
         builder.show();
     }
 
@@ -305,9 +322,10 @@ public class RoomActivity extends AppCompatActivity {
                         tvStatus.setText("Ready to Start");
                         tvStatus.setTextColor(Color.GREEN);
                         btnStart.setEnabled(true);
+// Inside addRoomEventListener()
                     } else {
                         tvStatus.setText("Waiting for players...");
-                        tvStatus.setTextColor(Color.BLACK);
+                        tvStatus.setTextColor(Color.parseColor("#3E2723")); // Use your theme's dark brown
                         btnStart.setEnabled(false);
                     }
                 }
