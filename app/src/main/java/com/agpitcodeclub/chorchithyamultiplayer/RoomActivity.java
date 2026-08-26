@@ -12,12 +12,12 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.firebase.database.DataSnapshot;
@@ -49,11 +49,9 @@ public class RoomActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_room);
-
-        // Java
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -101,9 +99,12 @@ public class RoomActivity extends AppCompatActivity {
             btnReady.setVisibility(View.VISIBLE);
 
             if (roomCode != null && !roomCode.isEmpty()) {
-                setupExistingRoomAsJoiner();
+                // Verify room exists before joining
+                verifyAndJoinRoom();
             } else {
-                showJoinDialog();
+                // This shouldn't happen with the new flow, but as a fallback:
+                Toast.makeText(this, "No Room Code provided", Toast.LENGTH_SHORT).show();
+                finish();
             }
         }
 
@@ -229,36 +230,24 @@ public class RoomActivity extends AppCompatActivity {
         addRoomEventListener();
     }
 
-    private void showJoinDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Enter Room Code");
-        final EditText input = new EditText(this);
-        // Fix visibility for Dark Mode
-        input.setTextColor(Color.BLACK);
-        input.setHintTextColor(Color.GRAY);
-        builder.setView(input);
-        builder.setPositiveButton("Join", (dialog, which) -> {
-            roomCode = input.getText().toString().trim();
-            if (roomCode.isEmpty()) {
-                showJoinDialog();
-                return;
-            }
-            roomRef = database.getReference("rooms").child(roomCode);
-            roomRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    if (snapshot.exists()) setupExistingRoomAsJoiner();
-                    else {
-                        Toast.makeText(RoomActivity.this, "Invalid Code", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
+    private void verifyAndJoinRoom() {
+        roomRef = database.getReference("rooms").child(roomCode);
+        roomRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    setupExistingRoomAsJoiner();
+                } else {
+                    Toast.makeText(RoomActivity.this, "Invalid Code", Toast.LENGTH_SHORT).show();
+                    finish();
                 }
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {}
-            });
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(RoomActivity.this, "Error connecting to room", Toast.LENGTH_SHORT).show();
+                finish();
+            }
         });
-        builder.setCancelable(true);
-        builder.show();
     }
 
     private void setupExistingRoomAsJoiner() {
