@@ -9,10 +9,14 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -51,8 +55,15 @@ public class GameActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
 
         // 1. Initialize UI
         tvRoundAnnounce = findViewById(R.id.tvRoundAnnounce);
@@ -77,11 +88,21 @@ public class GameActivity extends AppCompatActivity {
         // 2. Get Intent Data
         roomCode = getIntent().getStringExtra("roomCode");
         playerName = getIntent().getStringExtra("playerName");
+// Inside onCreate
+        playerName = getIntent().getStringExtra("playerName");
+
+        if (playerName == null || playerName.isEmpty()) {
+            // Fallback: If intent fails, try to get it from Firebase or a SharedPreferences
+            // For now, let's just toast an error to debug
+            Toast.makeText(this, "Player Name Missing!", Toast.LENGTH_SHORT).show();
+            playerName = "Player";
+        }
         tvPlayerName.setText("Hi, " + playerName);
         myMode = getIntent().getStringExtra("mode");
         mode = getIntent().getStringExtra("mode");
 
         roomRef = FirebaseDatabase.getInstance().getReference("rooms").child(roomCode);
+
 
         // Inside onCreate, after defining roomRef:
         roomRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -130,16 +151,20 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void fetchMyRole() {
-        roomRef.child("players").child(playerName).child("role").addListenerForSingleValueEvent(new ValueEventListener() {
+        // Change to valueEventListener so it updates as soon as the Host finishes assigning roles
+        roomRef.child("players").child(playerName).child("role").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists()) {
                     myRole = snapshot.getValue(String.class);
                     tvRole.setText(myRole);
 
-                    // IF I AM SIPAHI, I need to catch the Chor!
+                    // IMPORTANT: Reset UI states based on role
                     if ("Sipahi".equals(myRole)) {
                         setupSipahiUI();
+                    } else {
+                        layoutSipahiGuess.setVisibility(View.GONE);
+                        tvInstruction.setVisibility(View.VISIBLE);
                     }
                 }
             }
@@ -352,15 +377,15 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void findAndShowPolice() {
-        roomRef.child("players").addListenerForSingleValueEvent(new ValueEventListener() {
+        roomRef.child("players").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 for (DataSnapshot player : snapshot.getChildren()) {
                     String r = player.child("role").getValue(String.class);
-                    String name = player.getKey(); // Get Player Name
-
                     if ("Sipahi".equals(r)) {
+                        String name = player.getKey();
                         tvPoliceName.setText("👮 Police is: " + name);
+                        break; // Found them, stop looking
                     }
                 }
             }
