@@ -28,10 +28,12 @@ public class DashboardActivity extends AppCompatActivity {
     // 1. Create a helper class to handle sorting logic
     private static class PlayerScore implements Comparable<PlayerScore> {
         String name;
+        String avatar;
         int score;
 
-        public PlayerScore(String name, int score) {
+        public PlayerScore(String name, String avatar, int score) {
             this.name = name;
+            this.avatar = avatar;
             this.score = score;
         }
 
@@ -74,13 +76,15 @@ public class DashboardActivity extends AppCompatActivity {
                             // 2. Fetch data and store in object list
                             for (DataSnapshot p : snapshot.getChildren()) {
                                 String name = p.getKey();
+                                String avatar = p.child("avatar").getValue(String.class);
+                                if (avatar == null) avatar = "🥷";
                                 int score = 0;
                                 if (p.hasChild("score")) {
                                     try {
                                         score = p.child("score").getValue(Integer.class);
                                     } catch (Exception e) { score = 0; }
                                 }
-                                rawList.add(new PlayerScore(name, score));
+                                rawList.add(new PlayerScore(name, avatar, score));
                             }
 
                             // 3. Sort numerically (Highest Score First)
@@ -109,8 +113,8 @@ public class DashboardActivity extends AppCompatActivity {
                                     rankPrefix = "#" + (i + 1);
                                 }
 
-                                // Final String Format: "🥇 1st - Name: 1000 (Winner!)"
-                                displayList.add(rankPrefix + " - " + p.name + ": " + p.score + suffix);
+                                // Final String Format: "🥇 1st - [🥷] Name: 1000 (Winner!)"
+                                displayList.add(rankPrefix + " - [" + p.avatar + "] " + p.name + ": " + p.score + suffix);
                             }
 
                             adapter.notifyDataSetChanged();

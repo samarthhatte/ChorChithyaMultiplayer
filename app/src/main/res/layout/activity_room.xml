@@ -10,7 +10,7 @@
         android:id="@+id/tvRoomTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="24dp"
         android:text="Lobby"
         android:textColor="@color/text_primary"
         android:textSize="28sp"
@@ -18,6 +18,19 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tvRoundsInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Round 0 / 0"
+        android:textColor="@color/text_secondary"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvRoomTitle" />
 
     <TextView
         android:id="@+id/tvStatus"
@@ -29,7 +42,7 @@
         android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvRoomTitle" />
+        app:layout_constraintTop_toBottomOf="@id/tvRoundsInfo" />
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/listContainer"

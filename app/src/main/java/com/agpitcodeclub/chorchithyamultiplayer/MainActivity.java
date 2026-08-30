@@ -8,6 +8,7 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -20,7 +21,9 @@ import androidx.core.view.WindowInsetsCompat;
 public class MainActivity extends AppCompatActivity {
 
     EditText etPlayerName;
-    Button btnCreate, btnJoin;
+    Button btnCreate, btnJoin, btnInvite;
+    String selectedAvatar = "🥷"; // Default avatar
+    private static final String APP_URL = "https://play.google.com/store/apps/details?id=com.agpitcodeclub.chorchithyamultiplayer";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +40,9 @@ public class MainActivity extends AppCompatActivity {
         etPlayerName = findViewById(R.id.etPlayerName);
         btnCreate = findViewById(R.id.btnCreateRoom);
         btnJoin = findViewById(R.id.btnJoinRoom);
+        btnInvite = findViewById(R.id.btnInviteFriends);
+
+        setupAvatarSelection();
 
         // Logic for Create Room
         btnCreate.setOnClickListener(new View.OnClickListener() {
@@ -49,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
                     // Start the Room Activity - Host Mode
                     Intent intent = new Intent(MainActivity.this, RoomActivity.class);
                     intent.putExtra("playerName", playerName);
+                    intent.putExtra("avatar", selectedAvatar);
                     intent.putExtra("mode", "host");
                     startActivity(intent);
                 }
@@ -65,6 +72,17 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     showJoinDialog(playerName);
                 }
+            }
+        });
+
+        // Logic for Invite Friends
+        btnInvite.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.setType("text/plain");
+                intent.putExtra(Intent.EXTRA_TEXT, "Hey! Download Chor Chithya Multiplayer and play with me: " + APP_URL);
+                startActivity(Intent.createChooser(intent, "Share via"));
             }
         });
     }
@@ -87,6 +105,7 @@ public class MainActivity extends AppCompatActivity {
             // Start RoomActivity with the code
             Intent intent = new Intent(MainActivity.this, RoomActivity.class);
             intent.putExtra("playerName", playerName);
+            intent.putExtra("avatar", selectedAvatar);
             intent.putExtra("mode", "join");
             intent.putExtra("roomCode", roomCode);
             startActivity(intent);
@@ -94,5 +113,27 @@ public class MainActivity extends AppCompatActivity {
 
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
         builder.show();
+    }
+
+    private void setupAvatarSelection() {
+        TextView[] avatars = {
+                findViewById(R.id.avatar1),
+                findViewById(R.id.avatar2),
+                findViewById(R.id.avatar3),
+                findViewById(R.id.avatar4),
+                findViewById(R.id.avatar5)
+        };
+
+        for (TextView tv : avatars) {
+            tv.setOnClickListener(v -> {
+                // Reset all
+                for (TextView a : avatars) a.setBackground(null);
+                // Select this one
+                tv.setBackgroundResource(R.drawable.rounded_bg);
+                selectedAvatar = tv.getText().toString();
+            });
+        }
+        // Initial selection
+        avatars[0].setBackgroundResource(R.drawable.rounded_bg);
     }
 }

@@ -29,7 +29,7 @@ import java.util.List;
 
 public class GameActivity extends AppCompatActivity {
 
-    TextView tvPlayerName, tvRole, tvHiddenText, tvResult, tvInstruction;
+    TextView tvPlayerName, tvRole, tvHiddenText, tvResult, tvInstruction, tvPlayerAvatar;
     CardView cardView;
     LinearLayout layoutSipahiGuess;
     ListView listViewSuspects;
@@ -69,6 +69,7 @@ public class GameActivity extends AppCompatActivity {
         tvRoundAnnounce = findViewById(R.id.tvRoundAnnounce);
         tvInstruction = findViewById(R.id.tvInstruction);
         tvPlayerName = findViewById(R.id.tvPlayerName);
+        tvPlayerAvatar = findViewById(R.id.tvPlayerAvatar);
         tvRole = findViewById(R.id.tvRole);
         tvHiddenText = findViewById(R.id.tvHiddenText);
         tvResult = findViewById(R.id.tvResult);
@@ -88,6 +89,9 @@ public class GameActivity extends AppCompatActivity {
         // 2. Get Intent Data
         roomCode = getIntent().getStringExtra("roomCode");
         playerName = getIntent().getStringExtra("playerName");
+        String avatar = getIntent().getStringExtra("avatar");
+        if (avatar == null) avatar = "🥷";
+        tvPlayerAvatar.setText(avatar);
 // Inside onCreate
         playerName = getIntent().getStringExtra("playerName");
 
@@ -123,13 +127,21 @@ public class GameActivity extends AppCompatActivity {
             public void onCancelled(@NonNull DatabaseError error) {}
         });
 
-        // 3. Update Click Listener (Card Reveal)
+    // 3. Update Click Listener (Card Reveal)
         cardView.setOnClickListener(v -> {
+            if (myRole == null) {
+                Toast.makeText(this, "Loading role...", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             if (!isRevealed) {
                 // REVEAL
                 tvHiddenText.setVisibility(View.GONE);
                 findViewById(R.id.imgHiddenIcon).setVisibility(View.GONE);
                 tvRole.setVisibility(View.VISIBLE);
+
+                // 🔑 FIX: Change text color to dark when revealed on white background
+                tvRole.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.card_text_color));
 
                 cardLayout.setBackgroundColor(colorCardFace); // Use Dynamic Face Color
                 isRevealed = true;
@@ -138,6 +150,9 @@ public class GameActivity extends AppCompatActivity {
                 tvHiddenText.setVisibility(View.VISIBLE);
                 findViewById(R.id.imgHiddenIcon).setVisibility(View.VISIBLE);
                 tvRole.setVisibility(View.GONE);
+
+                // 🔑 Reset to white for the orange background
+                tvRole.setTextColor(android.graphics.Color.WHITE);
 
                 cardLayout.setBackgroundColor(colorCardBack); // Use Dynamic Back Color
                 isRevealed = false;
@@ -178,21 +193,25 @@ public class GameActivity extends AppCompatActivity {
         layoutSipahiGuess.setVisibility(View.VISIBLE); // Show the guessing area
         tvInstruction.setVisibility(View.GONE);
 
-        // Load other players into the list
-        roomRef.child("players").addListenerForSingleValueEvent(new ValueEventListener() {
+        // 🔑 FIX: Change to addValueEventListener to handle "Ghost Players" in real-time
+        roomRef.child("players").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 suspectsList.clear();
                 for (DataSnapshot player : snapshot.getChildren()) {
                     String pName = player.getKey();
                     // Don't add myself to the suspect list
-                    if (!pName.equals(playerName)) {
+                    if (pName != null && !pName.equals(playerName)) {
                         suspectsList.add(pName);
                     }
                 }
-                // Show list
-                adapter = new ArrayAdapter<>(GameActivity.this, android.R.layout.simple_list_item_1, suspectsList);
-                listViewSuspects.setAdapter(adapter);
+                
+                if (adapter == null) {
+                    adapter = new ArrayAdapter<>(GameActivity.this, android.R.layout.simple_list_item_1, suspectsList);
+                    listViewSuspects.setAdapter(adapter);
+                } else {
+                    adapter.notifyDataSetChanged();
+                }
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
@@ -274,14 +293,28 @@ public class GameActivity extends AppCompatActivity {
                                     }
 
                                     // 4. Send everyone to the lobby
-                                    goToLobby();
+                                    Intent intent = new Intent(GameActivity.this, RoomActivity.class);
+                                    intent.putExtra("playerName", playerName);
+                                    intent.putExtra("roomCode", roomCode);
+                                    intent.putExtra("avatar", tvPlayerAvatar.getText().toString());
+                                    intent.putExtra("mode", myMode);
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    startActivity(intent);
+                                    finish();
                                 });
                     }
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
                         Toast.makeText(GameActivity.this, "Error saving player roster.", Toast.LENGTH_SHORT).show();
                         // Fallback: If roster save fails, still send to lobby to prevent lockup
-                        goToLobby();
+                        Intent intent = new Intent(GameActivity.this, RoomActivity.class);
+                        intent.putExtra("playerName", playerName);
+                        intent.putExtra("roomCode", roomCode);
+                        intent.putExtra("avatar", tvPlayerAvatar.getText().toString());
+                        intent.putExtra("mode", myMode);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(intent);
+                        finish();
                     }
                 });
             });
@@ -304,17 +337,6 @@ public class GameActivity extends AppCompatActivity {
         if (!isFinishing() && !isDestroyed()) {
             builder.show();
         }
-    }
-
-    // Helper to keep code clean
-    private void goToLobby() {
-        Intent intent = new Intent(GameActivity.this, RoomActivity.class);
-        intent.putExtra("playerName", playerName);
-        intent.putExtra("roomCode", roomCode);
-        intent.putExtra("mode", myMode);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
-        finish();
     }
 
     // --- GLOBAL LISTENER (Everyone sees the result) ---
