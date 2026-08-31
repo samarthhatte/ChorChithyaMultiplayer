@@ -1,5 +1,6 @@
 package com.agpitcodeclub.chorchithyamultiplayer;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -44,6 +45,7 @@ public class RoomActivity extends AppCompatActivity {
     String roomCode = "";
     String role = "joiner";
     String selectedAvatar = "🥷";
+    private static final String APP_URL = "https://play.google.com/store/apps/details?id=com.agpitcodeclub.chorchithyamultiplayer";
 
     FirebaseDatabase database;
     DatabaseReference roomRef;
@@ -75,10 +77,10 @@ public class RoomActivity extends AppCompatActivity {
 
             Boolean isReady = player.child("isReady").getValue(Boolean.class);
             if (isReady != null && isReady) {
-                tvReady.setText("READY");
+                tvReady.setText(R.string.label_ready);
                 tvReady.setTextColor(Color.parseColor("#4CAF50")); // Green
             } else {
-                tvReady.setText("NOT READY");
+                tvReady.setText(R.string.label_not_ready);
                 tvReady.setTextColor(Color.parseColor("#F44336")); // Red
             }
 
@@ -87,7 +89,13 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase));
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
+        ThemeUtils.applyTheme(this);
         EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_room);
@@ -153,16 +161,15 @@ public class RoomActivity extends AppCompatActivity {
         btnShare.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_SEND);
             intent.setType("text/plain");
-            String shareMessage = "Join my Chor Chithya game! \nRoom Code: " + roomCode + 
-                                  "\n\nDownload App: https://play.google.com/store/apps/details?id=com.agpitcodeclub.chorchithyamultiplayer";
+            String shareMessage = getString(R.string.share_room_msg, roomCode, APP_URL);
             intent.putExtra(Intent.EXTRA_TEXT, shareMessage);
-            startActivity(Intent.createChooser(intent, "Invite via"));
+            startActivity(Intent.createChooser(intent, getString(R.string.share_via)));
         });
 
         // 7. Start Game Button
         btnStart.setOnClickListener(v -> {
             if (playerSnapshots.size() < 2) {
-                Toast.makeText(this, "Need at least 2 players!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.toast_need_2_players, Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -197,14 +204,14 @@ public class RoomActivity extends AppCompatActivity {
                         missingPlayers.removeAll(currentLobbyPlayers);
 
                         if (!missingPlayers.isEmpty()) {
-                            Toast.makeText(RoomActivity.this, "Still missing players!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(RoomActivity.this, R.string.toast_missing_players, Toast.LENGTH_SHORT).show();
                             return;
                         }
                     }
 
                     if (readyPlayers < totalPlayersInLobby) {
                         String names = TextUtils.join(", ", notReadyPlayerNames);
-                        Toast.makeText(RoomActivity.this, names + " are not ready yet", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(RoomActivity.this, getString(R.string.toast_not_ready_yet, names), Toast.LENGTH_SHORT).show();
                         return;
                     }
 
@@ -220,20 +227,20 @@ public class RoomActivity extends AppCompatActivity {
         btnReady.setOnClickListener(v -> {
             roomRef.child("players").child(playerName).child("isReady").setValue(true);
             btnReady.setVisibility(View.GONE); // Intended behavior: Hide after clicking
-            Toast.makeText(this, "Marked as Ready!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.toast_marked_ready, Toast.LENGTH_SHORT).show();
         });
     }
 
     private void showCreateRoomDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Tournament Settings");
-        builder.setMessage("How many rounds?");
+        builder.setTitle(R.string.dialog_tournament_settings);
+        builder.setMessage(R.string.dialog_how_many_rounds);
         final EditText input = new EditText(this);
         input.setInputType(InputType.TYPE_CLASS_NUMBER);
         input.setText("5");
         builder.setView(input);
 
-        builder.setPositiveButton("Create", (dialog, which) -> {
+        builder.setPositiveButton(R.string.btn_create, (dialog, which) -> {
             String roundsStr = input.getText().toString().trim();
             int totalRounds = roundsStr.isEmpty() ? 5 : Integer.parseInt(roundsStr);
 
@@ -262,7 +269,7 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     private void setupExistingRoomAsHost() {
-        tvRoomTitle.setText("Room Code: " + roomCode);
+        tvRoomTitle.setText(getString(R.string.label_room_code_display, roomCode));
         roomRef = database.getReference("rooms").child(roomCode);
         roomRef.child("status").setValue("waiting");
         roomRef.child("players").child(playerName).child("role").setValue("host");
@@ -283,20 +290,20 @@ public class RoomActivity extends AppCompatActivity {
                 if (snapshot.exists()) {
                     setupExistingRoomAsJoiner();
                 } else {
-                    Toast.makeText(RoomActivity.this, "Invalid Code", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(RoomActivity.this, R.string.toast_invalid_code, Toast.LENGTH_SHORT).show();
                     finish();
                 }
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(RoomActivity.this, "Error connecting to room", Toast.LENGTH_SHORT).show();
+                Toast.makeText(RoomActivity.this, R.string.toast_error_connecting, Toast.LENGTH_SHORT).show();
                 finish();
             }
         });
     }
 
     private void setupExistingRoomAsJoiner() {
-        tvRoomTitle.setText("Room Code: " + roomCode);
+        tvRoomTitle.setText(getString(R.string.label_room_code_display, roomCode));
         roomRef = database.getReference("rooms").child(roomCode);
 
         // Joiners are NOT ready initially
@@ -334,13 +341,13 @@ public class RoomActivity extends AppCompatActivity {
                 adapter.notifyDataSetChanged();
 
                 // 🔑 FIX: Update tvStatus separately from tvRoomTitle
-                tvRoomTitle.setText("Room Code: " + roomCode); // Keep title clean
+                tvRoomTitle.setText(getString(R.string.label_room_code_display, roomCode)); // Keep title clean
 
                 // Update Rounds Info
                 Integer current = snapshot.child("currentRound").getValue(Integer.class);
                 Integer total = snapshot.child("totalRounds").getValue(Integer.class);
                 if (current != null && total != null) {
-                    tvRoundsInfo.setText("Round " + current + " / " + total);
+                    tvRoundsInfo.setText(getString(R.string.label_round_count, current, total));
                 }
 
                 if (requiredRoster != null && !requiredRoster.isEmpty()) {
@@ -348,27 +355,27 @@ public class RoomActivity extends AppCompatActivity {
                     missingPlayers.removeAll(currentLobbyNames);
 
                     if (!missingPlayers.isEmpty()) {
-                        tvStatus.setText("⚠️ MISSING: " + String.join(", ", missingPlayers));
+                        tvStatus.setText(getString(R.string.status_missing, TextUtils.join(", ", missingPlayers)));
                         tvStatus.setTextColor(Color.RED);
                         btnStart.setEnabled(false);
                     } else if (readyPlayers < totalPlayersInLobby) {
-                        tvStatus.setText("Waiting for " + (totalPlayersInLobby - readyPlayers) + " to click READY");
+                        tvStatus.setText(getString(R.string.status_waiting_for_ready, totalPlayersInLobby - readyPlayers));
                         tvStatus.setTextColor(Color.parseColor("#FFA500")); // Orange
                         btnStart.setEnabled(false);
                     } else {
-                        tvStatus.setText("ALL PLAYERS READY!");
+                        tvStatus.setText(R.string.status_all_ready);
                         tvStatus.setTextColor(Color.GREEN);
                         btnStart.setEnabled(true);
                     }
                 } else {
                     // Initial Lobby Logic
                     if (totalPlayersInLobby >= 2 && readyPlayers == totalPlayersInLobby) {
-                        tvStatus.setText("Ready to Start");
+                        tvStatus.setText(R.string.status_ready_to_start);
                         tvStatus.setTextColor(Color.GREEN);
                         btnStart.setEnabled(true);
 // Inside addRoomEventListener()
                     } else {
-                        tvStatus.setText("Waiting for players...");
+                        tvStatus.setText(R.string.status_waiting_players);
                         tvStatus.setTextColor(Color.parseColor("#3E2723")); // Use your theme's dark brown
                         btnStart.setEnabled(false);
                     }
@@ -376,7 +383,7 @@ public class RoomActivity extends AppCompatActivity {
 
                 String status = snapshot.child("status").getValue(String.class);
                 if ("closed".equals(status)) {
-                    Toast.makeText(RoomActivity.this, "Host closed room", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(RoomActivity.this, R.string.toast_host_closed, Toast.LENGTH_SHORT).show();
                     finish();
                 }
                 if ("playing".equals(status)) {
@@ -400,19 +407,19 @@ public class RoomActivity extends AppCompatActivity {
         java.util.Map<String, Object> updates = new java.util.HashMap<>();
 
         List<String> finalRoles = new ArrayList<>();
-        finalRoles.add("Sipahi");
-        finalRoles.add("Chor");
+        finalRoles.add("sipahi");
+        finalRoles.add("chor");
         List<String> extraRoles = new ArrayList<>();
-        extraRoles.add("Raja");
-        extraRoles.add("Mantri");
-        extraRoles.add("Rani");
-        extraRoles.add("Senapati");
+        extraRoles.add("raja");
+        extraRoles.add("mantri");
+        extraRoles.add("rani");
+        extraRoles.add("senapati");
         Collections.shuffle(extraRoles);
 
         int playersNeeded = playerSnapshots.size() - 2;
         for (int i = 0; i < playersNeeded; i++) {
             if (i < extraRoles.size()) finalRoles.add(extraRoles.get(i));
-            else finalRoles.add("Praja");
+            else finalRoles.add("praja");
         }
 
         Collections.shuffle(finalRoles);

@@ -8,4 +8,19 @@
     </style>
 
     <style name="Theme.ChorChithyaMultiplayer" parent="Base.Theme.ChorChithyaMultiplayer" />
+
+    <style name="Theme.ChorChithyaMultiplayer.Blue" parent="Base.Theme.ChorChithyaMultiplayer">
+        <item name="colorPrimary">@color/blue_primary</item>
+        <item name="android:windowBackground">@color/blue_background</item>
+    </style>
+
+    <style name="Theme.ChorChithyaMultiplayer.Purple" parent="Base.Theme.ChorChithyaMultiplayer">
+        <item name="colorPrimary">@color/purple_primary</item>
+        <item name="android:windowBackground">@color/purple_background</item>
+    </style>
+
+    <style name="Theme.ChorChithyaMultiplayer.Teal" parent="Base.Theme.ChorChithyaMultiplayer">
+        <item name="colorPrimary">@color/teal_primary</item>
+        <item name="android:windowBackground">@color/teal_background</item>
+    </style>
 </resources>

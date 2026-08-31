@@ -24,14 +24,14 @@
         android:textSize="18sp"
         android:textStyle="bold"
         android:textColor="#3E2723"
-        android:text="Player Name" />
+        android:text="@string/hint_your_name" />
 
     <TextView
         android:id="@+id/tvReadyStatus"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:text="NOT READY"
+        android:text="@string/label_not_ready"
         android:textColor="#F44336"
         android:textSize="12sp"
         android:textStyle="bold" />

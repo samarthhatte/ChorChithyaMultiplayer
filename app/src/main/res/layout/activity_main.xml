@@ -4,7 +4,19 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/game_background">
+    android:background="?android:attr/windowBackground">
+
+    <android.widget.ImageButton
+        android:id="@+id/btnSettings"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_manage"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="?attr/colorPrimary" />
 
     <LinearLayout
         android:id="@+id/headerLayout"
@@ -20,7 +32,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Chor Chithya"
+            android:text="@string/title_chor_chithya"
             android:textColor="@color/text_primary"
             android:textSize="40sp"
             android:textStyle="bold" />
@@ -28,7 +40,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Multiplayer Edition"
+            android:text="@string/subtitle_multiplayer"
             android:textColor="@color/text_secondary"
             android:textSize="18sp"
             android:textStyle="italic" />
@@ -57,7 +69,7 @@
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Your Name"
+                android:hint="@string/hint_your_name"
                 app:boxCornerRadiusBottomEnd="16dp"
                 app:boxCornerRadiusBottomStart="16dp"
                 app:boxCornerRadiusTopEnd="16dp"
@@ -76,7 +88,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Choose Avatar:"
+                android:text="@string/label_choose_avatar"
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp"
                 android:textStyle="bold" />
@@ -140,8 +152,8 @@
         android:layout_height="64dp"
         android:layout_marginHorizontal="32dp"
         android:layout_marginBottom="16dp"
-        android:backgroundTint="@color/primary_accent"
-        android:text="Create New Room"
+        android:backgroundTint="?attr/colorPrimary"
+        android:text="@string/btn_create_room"
         android:textColor="@color/white"
         android:textSize="18sp"
         app:cornerRadius="16dp"
@@ -157,7 +169,7 @@
         android:layout_marginHorizontal="32dp"
         android:layout_marginBottom="16dp"
         android:backgroundTint="@color/secondary_accent"
-        android:text="Join Existing Room"
+        android:text="@string/btn_join_room"
         android:textColor="@color/white"
         android:textSize="18sp"
         app:cornerRadius="16dp"
@@ -171,8 +183,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="32dp"
-        android:text="Invite Friends"
-        android:textColor="@color/primary_accent"
+        android:text="@string/btn_invite_friends"
+        android:textColor="?attr/colorPrimary"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

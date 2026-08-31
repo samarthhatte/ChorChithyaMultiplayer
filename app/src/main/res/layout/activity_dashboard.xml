@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/game_background">
+    android:background="?android:attr/windowBackground">
 
     <!-- Content Container -->
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -18,7 +18,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="64dp"
             android:gravity="center"
-            android:text="🏆 FINAL RESULTS 🏆"
+            android:text="@string/title_final_results"
             android:textColor="@color/text_primary"
             android:textSize="28sp"
             android:textStyle="bold"
@@ -61,7 +61,7 @@
             android:layout_marginHorizontal="20dp"
             android:layout_marginBottom="48dp"
             android:backgroundTint="@color/primary_accent"
-            android:text="Back to Main Menu"
+            android:text="@string/btn_back_menu"
             android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold"

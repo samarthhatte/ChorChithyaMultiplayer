@@ -1,0 +1,93 @@
+<resources>
+    <string name="app_name">चोर चिठ्ठ्या मल्टीप्लेअर</string>
+
+    <!-- Main Activity -->
+    <string name="title_chor_chithya">चोर चिठ्ठ्या</string>
+    <string name="subtitle_multiplayer">मल्टीप्लेअर एडिशन</string>
+    <string name="hint_your_name">तुमचे नाव</string>
+    <string name="label_choose_avatar">अवतार निवडा:</string>
+    <string name="btn_create_room">नवीन रूम तयार करा</string>
+    <string name="btn_join_room">रूममध्ये सामील व्हा</string>
+    <string name="btn_invite_friends">मित्रांना आमंत्रित करा</string>
+    <string name="toast_enter_name">कृपया तुमचे नाव प्रविष्ट करा</string>
+    <string name="dialog_enter_room_code">रूम कोड प्रविष्ट करा</string>
+    <string name="btn_join">सामील व्हा</string>
+    <string name="btn_cancel">रद्द करा</string>
+    <string name="share_app_msg">नमस्कार! चोर चिठ्ठ्या मल्टीप्लेअर डाउनलोड करा आणि माझ्यासोबत खेळा: %1$s</string>
+    <string name="share_via">द्वारे शेअर करा</string>
+    <string name="dialog_select_theme">अॅप थीम निवडा</string>
+    <string name="theme_default">डिफॉल्ट (नारंगी)</string>
+    <string name="theme_blue">निळा</string>
+    <string name="theme_purple">जांभळा</string>
+    <string name="theme_teal">टील</string>
+    <string name="toast_enter_code">कृपया एक कोड प्रविष्ट करा</string>
+
+    <!-- Room Activity -->
+    <string name="label_lobby">लॉबी</string>
+    <string name="label_round_count">राउंड %d of %d</string>
+    <string name="status_waiting_players">खेळाडूंची प्रतीक्षा आहे...</string>
+    <string name="btn_ready">मी तयार आहे</string>
+    <string name="btn_start_game">गेम सुरू करा</string>
+    <string name="share_room_msg">माझ्या चोर चिठ्ठ्या गेममध्ये सामील व्हा! \nरूम कोड: %1$s \n\nअॅप डाउनलोड करा: %2$s</string>
+    <string name="toast_need_2_players">किमान २ खेळाडू हवे आहेत!</string>
+    <string name="toast_missing_players">अजूनही खेळाडू कमी आहेत!</string>
+    <string name="toast_not_ready_yet">%1$s अजून तयार नाहीत</string>
+    <string name="toast_marked_ready">तयार म्हणून चिन्हांकित केले!</string>
+    <string name="dialog_tournament_settings">टूर्नामेंट सेटिंग्ज</string>
+    <string name="dialog_how_many_rounds">किती राउंड?</string>
+    <string name="btn_create">तयार करा</string>
+    <string name="label_room_code_display">रूम कोड: %1$s</string>
+    <string name="toast_invalid_code">अवैध कोड</string>
+    <string name="toast_error_connecting">रूमशी कनेक्ट करण्यात त्रुटी</string>
+    <string name="toast_host_closed">होस्टने रूम बंद केली</string>
+    <string name="status_waiting_for_ready">%1$d ने READY वर क्लिक करण्याची प्रतीक्षा आहे</string>
+    <string name="status_all_ready">सर्व खेळाडू तयार आहेत!</string>
+    <string name="status_ready_to_start">सुरू करण्यासाठी तयार</string>
+    <string name="label_ready">तयार</string>
+    <string name="label_not_ready">तयार नाही</string>
+    <string name="status_missing">⚠️ गहाळ: %1$s</string>
+
+    <!-- Roles -->
+    <string name="role_sipahi">शिपाई</string>
+    <string name="role_chor">चोर</string>
+    <string name="role_raja">राजा</string>
+    <string name="role_mantri">मंत्री</string>
+    <string name="role_rani">राणी</string>
+    <string name="role_senapati">सेनापती</string>
+    <string name="role_praja">प्रजा</string>
+
+    <!-- Game Activity -->
+    <string name="status_searching_police">पोलीस शोधत आहे...</string>
+    <string name="label_tap_reveal">पाहण्यासाठी टॅप करा</string>
+    <string name="label_role_placeholder">रोल</string>
+    <string name="label_keep_secret">हे गुप्त ठेवा!</string>
+    <string name="label_tap_chor">चोर वर टॅप करा:</string>
+    <string name="label_round_announce">राउंड %1$d</string>
+    <string name="toast_name_missing">खेळाडूचे नाव गहाळ आहे!</string>
+    <string name="label_hi_player">नमस्कार, %1$s</string>
+    <string name="toast_loading_role">रोल लोड होत आहे...</string>
+    <string name="label_police_is">👮 पोलीस आहे: %1$s</string>
+    <string name="msg_sipahi_wins">शिपाई जिंकला!</string>
+    <string name="msg_chor_wins">चोर जिंकला!</string>
+    <string name="dialog_round_over">राउंड %1$d समाप्त</string>
+    <string name="btn_next_round">पुढचा राउंड</string>
+    <string name="dialog_tournament_finished">टूर्नामेंट समाप्त!</string>
+    <string name="msg_game_over">गेम संपला!</string>
+    <string name="btn_see_scoreboard">स्कोअरबोर्ड पहा</string>
+    <string name="msg_points_gained">तुम्हाला मिळाले: %1$d गुण!</string>
+
+    <!-- Dashboard Activity -->
+    <string name="title_final_results">🏆 अंतिम निकाल 🏆</string>
+    <string name="btn_back_menu">मुख्य मेनूवर परत जा</string>
+    <string name="rank_1st">🥇 प्रथम</string>
+    <string name="rank_2nd">🥈 द्वितीय</string>
+    <string name="rank_3rd">🥉 तृतीय</string>
+    <string name="rank_last">🤡 अंतिम</string>
+    <string name="label_winner_suffix"> (विजेता!)</string>
+    <string name="label_loser_suffix"> (पुढच्या वेळी नशीब उजळेल)</string>
+    <string name="toast_failed_scores">स्कोअर लोड करण्यात अयशस्वी</string>
+
+    <!-- Language Settings -->
+    <string name="dialog_select_language">भाषा निवडा</string>
+    <string name="btn_settings">सेटिंग्ज</string>
+</resources>

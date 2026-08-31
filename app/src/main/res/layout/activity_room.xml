@@ -4,14 +4,14 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/game_background">
+    android:background="?android:attr/windowBackground">
 
     <TextView
         android:id="@+id/tvRoomTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="Lobby"
+        android:text="@string/label_lobby"
         android:textColor="@color/text_primary"
         android:textSize="28sp"
         android:textStyle="bold"
@@ -24,7 +24,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="Round 0 / 0"
+        android:text=""
         android:textColor="@color/text_secondary"
         android:textSize="16sp"
         android:textStyle="bold"
@@ -37,7 +37,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Waiting for players..."
+        android:text="@string/status_waiting_players"
         android:textColor="@color/text_secondary"
         android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -76,7 +76,7 @@
         android:layout_marginHorizontal="20dp"
         android:layout_marginBottom="12dp"
         android:backgroundTint="#25D366"
-        android:text="Invite via WhatsApp"
+        android:text="@string/btn_invite_friends"
         android:textAllCaps="false"
         app:cornerRadius="16dp"
         app:layout_constraintBottom_toTopOf="@id/btnReady" />
@@ -88,7 +88,7 @@
         android:layout_marginHorizontal="20dp"
         android:layout_marginBottom="12dp"
         android:backgroundTint="@color/secondary_accent"
-        android:text="I AM READY"
+        android:text="@string/btn_ready"
         app:cornerRadius="16dp"
         android:visibility="visible"
         app:layout_constraintBottom_toTopOf="@id/btnStartGame" />
@@ -100,7 +100,7 @@
         android:layout_marginHorizontal="20dp"
         android:layout_marginBottom="32dp"
         android:backgroundTint="@color/primary_accent"
-        android:text="Start Game"
+        android:text="@string/btn_start_game"
         android:textColor="@color/white"
         android:textAllCaps="true"
         android:visibility="gone"

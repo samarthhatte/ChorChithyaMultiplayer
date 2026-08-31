@@ -1,5 +1,6 @@
 package com.agpitcodeclub.chorchithyamultiplayer;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -54,7 +55,13 @@ public class GameActivity extends AppCompatActivity {
     ArrayAdapter<String> adapter;
 
     @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase));
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
+        ThemeUtils.applyTheme(this);
         EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
@@ -98,10 +105,10 @@ public class GameActivity extends AppCompatActivity {
         if (playerName == null || playerName.isEmpty()) {
             // Fallback: If intent fails, try to get it from Firebase or a SharedPreferences
             // For now, let's just toast an error to debug
-            Toast.makeText(this, "Player Name Missing!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.toast_name_missing, Toast.LENGTH_SHORT).show();
             playerName = "Player";
         }
-        tvPlayerName.setText("Hi, " + playerName);
+        tvPlayerName.setText(getString(R.string.label_hi_player, playerName));
         myMode = getIntent().getStringExtra("mode");
         mode = getIntent().getStringExtra("mode");
 
@@ -117,7 +124,7 @@ public class GameActivity extends AppCompatActivity {
                     totalRounds = snapshot.child("totalRounds").getValue(Integer.class);
 
                     // 1. Update Title
-                    setTitle("Round " + currentRound + " / " + totalRounds);
+                    setTitle(getString(R.string.label_round_count, currentRound, totalRounds));
 
                     // 2. TRIGGER ANIMATION HERE
                     playRoundAnimation(currentRound);
@@ -130,7 +137,7 @@ public class GameActivity extends AppCompatActivity {
     // 3. Update Click Listener (Card Reveal)
         cardView.setOnClickListener(v -> {
             if (myRole == null) {
-                Toast.makeText(this, "Loading role...", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.toast_loading_role, Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -172,10 +179,10 @@ public class GameActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists()) {
                     myRole = snapshot.getValue(String.class);
-                    tvRole.setText(myRole);
+                    tvRole.setText(getRoleDisplayName(myRole));
 
                     // IMPORTANT: Reset UI states based on role
-                    if ("Sipahi".equals(myRole)) {
+                    if ("sipahi".equals(myRole)) {
                         setupSipahiUI();
                     } else {
                         layoutSipahiGuess.setVisibility(View.GONE);
@@ -207,7 +214,16 @@ public class GameActivity extends AppCompatActivity {
                 }
                 
                 if (adapter == null) {
-                    adapter = new ArrayAdapter<>(GameActivity.this, android.R.layout.simple_list_item_1, suspectsList);
+                    adapter = new ArrayAdapter<String>(GameActivity.this, android.R.layout.simple_list_item_1, suspectsList) {
+                        @NonNull
+                        @Override
+                        public View getView(int position, View convertView, @NonNull android.view.ViewGroup parent) {
+                            View view = super.getView(position, convertView, parent);
+                            TextView textView = view.findViewById(android.R.id.text1);
+                            textView.setTextColor(androidx.core.content.ContextCompat.getColor(GameActivity.this, R.color.text_primary));
+                            return view;
+                        }
+                    };
                     listViewSuspects.setAdapter(adapter);
                 } else {
                     adapter.notifyDataSetChanged();
@@ -230,12 +246,12 @@ public class GameActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 String realRole = snapshot.getValue(String.class);
 
-                if ("Chor".equals(realRole)) {
+                if ("chor".equals(realRole)) {
                     // CORRECT GUESS!
-                    roomRef.child("winner").setValue("Sipahi"); // Tell Firebase Sipahi won
+                    roomRef.child("winner").setValue("sipahi"); // Tell Firebase Sipahi won
                 } else {
                     // WRONG GUESS!
-                    roomRef.child("winner").setValue("Chor"); // Tell Firebase Chor won
+                    roomRef.child("winner").setValue("chor"); // Tell Firebase Chor won
                 }
                 // Hide buttons so I can't guess again
                 layoutSipahiGuess.setVisibility(View.GONE);
@@ -247,7 +263,7 @@ public class GameActivity extends AppCompatActivity {
 
     // --- GAME OVER & NEXT ROUND LOGIC ---
     private void showGameOverDialog(String winner) {
-        String message = "Sipahi".equals(winner) ? "Sipahi Wins!" : "Chor Wins!";
+        String message = "sipahi".equals(winner) ? getString(R.string.msg_sipahi_wins) : getString(R.string.msg_chor_wins);
 
         tvResult.setText(message);
         tvResult.setVisibility(View.VISIBLE);
@@ -261,11 +277,11 @@ public class GameActivity extends AppCompatActivity {
         // LOGIC: Is this the LAST round?
         if (currentRound < totalRounds) {
             // --- NOT FINISHED: Show "Next Round" ---
-            builder.setTitle("Round " + currentRound + " Over");
+            builder.setTitle(getString(R.string.dialog_round_over, currentRound));
             builder.setMessage(message);
 
             // 🔑 UPDATED POSITIVE BUTTON LOGIC FOR ROSTER SAVING
-            builder.setPositiveButton("Next Round", (dialog, which) -> {
+            builder.setPositiveButton(R.string.btn_next_round, (dialog, which) -> {
                 if (roomRef != null) {
                     roomRef.child("winner").removeValue();
                     roomRef.child("status").setValue("waiting");
@@ -321,9 +337,9 @@ public class GameActivity extends AppCompatActivity {
 
         } else {
             // --- FINISHED: Show "See Results" ---
-            builder.setTitle("Tournament Finished!");
-            builder.setMessage(message + "\n\nGame Over!");
-            builder.setPositiveButton("See Scoreboard", (dialog, which) -> {
+            builder.setTitle(R.string.dialog_tournament_finished);
+            builder.setMessage(message + "\n\n" + getString(R.string.msg_game_over));
+            builder.setPositiveButton(R.string.btn_see_scoreboard, (dialog, which) -> {
                 if (roomRef != null) roomRef.child("winner").removeValue();
 
                 // Go to Dashboard
@@ -368,12 +384,12 @@ public class GameActivity extends AppCompatActivity {
 
         int roundPoints = 0;
         // 1. Calculate Points
-        if (myRole.equals("Raja")) roundPoints = 1000;
-        else if (myRole.equals("Rani")) roundPoints = 900;
-        else if (myRole.equals("Mantri")) roundPoints = 800;
-        else if (myRole.equals("Senapati")) roundPoints = 500;
-        else if (myRole.equals("Sipahi")) roundPoints = winnerRole.equals("Sipahi") ? 100 : 0;
-        else if (myRole.equals("Chor")) roundPoints = winnerRole.equals("Chor") ? 100 : 0;
+        if (myRole.equals("raja")) roundPoints = 1000;
+        else if (myRole.equals("rani")) roundPoints = 900;
+        else if (myRole.equals("mantri")) roundPoints = 800;
+        else if (myRole.equals("senapati")) roundPoints = 500;
+        else if (myRole.equals("sipahi")) roundPoints = winnerRole.equals("sipahi") ? 100 : 0;
+        else if (myRole.equals("chor")) roundPoints = winnerRole.equals("chor") ? 100 : 0;
 
         // 2. Save to Firebase (Add to existing score)
         int finalPoints = roundPoints;
@@ -395,7 +411,7 @@ public class GameActivity extends AppCompatActivity {
             public void onCancelled(@NonNull DatabaseError error) {}
         });
 
-        tvResult.append("\n\nYou got: " + roundPoints + " points!");
+        tvResult.append("\n\n" + getString(R.string.msg_points_gained, roundPoints));
     }
 
     private void findAndShowPolice() {
@@ -404,9 +420,9 @@ public class GameActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 for (DataSnapshot player : snapshot.getChildren()) {
                     String r = player.child("role").getValue(String.class);
-                    if ("Sipahi".equals(r)) {
+                    if ("sipahi".equals(r)) {
                         String name = player.getKey();
-                        tvPoliceName.setText("👮 Police is: " + name);
+                        tvPoliceName.setText(getString(R.string.label_police_is, name));
                         break; // Found them, stop looking
                     }
                 }
@@ -414,6 +430,20 @@ public class GameActivity extends AppCompatActivity {
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
         });
+    }
+
+    private String getRoleDisplayName(String roleKey) {
+        if (roleKey == null) return "";
+        switch (roleKey) {
+            case "sipahi": return getString(R.string.role_sipahi);
+            case "chor": return getString(R.string.role_chor);
+            case "raja": return getString(R.string.role_raja);
+            case "mantri": return getString(R.string.role_mantri);
+            case "rani": return getString(R.string.role_rani);
+            case "senapati": return getString(R.string.role_senapati);
+            case "praja": return getString(R.string.role_praja);
+            default: return roleKey;
+        }
     }
 
     @Override
@@ -426,7 +456,7 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void playRoundAnimation(int roundNum) {
-        tvRoundAnnounce.setText("Round " + roundNum);
+        tvRoundAnnounce.setText(getString(R.string.label_round_announce, roundNum));
         tvRoundAnnounce.setVisibility(View.VISIBLE);
         tvRoundAnnounce.setAlpha(0f);
         tvRoundAnnounce.setScaleX(0.5f);

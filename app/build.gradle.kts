@@ -12,8 +12,8 @@ android {
         applicationId = "com.agpitcodeclub.chorchithyamultiplayer"
         minSdk = 24
         targetSdk = 36
-        versionCode = 46
-        versionName = "5.6"
+        versionCode = 47
+        versionName = "5.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
