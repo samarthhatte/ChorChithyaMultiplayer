@@ -1,3 +1,93 @@
 <resources>
     <string name="app_name">Chor Chithya Multiplayer</string>
+
+    <!-- Main Activity -->
+    <string name="title_chor_chithya">Chor Chithya</string>
+    <string name="subtitle_multiplayer">Multiplayer Edition</string>
+    <string name="hint_your_name">Your Name</string>
+    <string name="label_choose_avatar">Choose Avatar:</string>
+    <string name="btn_create_room">Create New Room</string>
+    <string name="btn_join_room">Join Existing Room</string>
+    <string name="btn_invite_friends">Invite Friends</string>
+    <string name="toast_enter_name">Please enter your name</string>
+    <string name="dialog_enter_room_code">Enter Room Code</string>
+    <string name="btn_join">Join</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="share_app_msg">Hey! Download Chor Chithya Multiplayer and play with me: %1$s</string>
+    <string name="share_via">Share via</string>
+    <string name="dialog_select_theme">Select App Theme</string>
+    <string name="theme_default">Default (Orange)</string>
+    <string name="theme_blue">Blue</string>
+    <string name="theme_purple">Purple</string>
+    <string name="theme_teal">Teal</string>
+    <string name="toast_enter_code">Please enter a code</string>
+
+    <!-- Room Activity -->
+    <string name="label_lobby">Lobby</string>
+    <string name="label_round_count">Round %d of %d</string>
+    <string name="status_waiting_players">Waiting for players...</string>
+    <string name="btn_ready">I AM READY</string>
+    <string name="btn_start_game">Start Game</string>
+    <string name="share_room_msg">Join my Chor Chithya game! \nRoom Code: %1$s \n\nDownload App: %2$s</string>
+    <string name="toast_need_2_players">Need at least 2 players!</string>
+    <string name="toast_missing_players">Still missing players!</string>
+    <string name="toast_not_ready_yet">%1$s are not ready yet</string>
+    <string name="toast_marked_ready">Marked as Ready!</string>
+    <string name="dialog_tournament_settings">Tournament Settings</string>
+    <string name="dialog_how_many_rounds">How many rounds?</string>
+    <string name="btn_create">Create</string>
+    <string name="label_room_code_display">Room Code: %1$s</string>
+    <string name="toast_invalid_code">Invalid Code</string>
+    <string name="toast_error_connecting">Error connecting to room</string>
+    <string name="toast_host_closed">Host closed room</string>
+    <string name="status_waiting_for_ready">Waiting for %1$d to click READY</string>
+    <string name="status_all_ready">ALL PLAYERS READY!</string>
+    <string name="status_ready_to_start">Ready to Start</string>
+    <string name="label_ready">READY</string>
+    <string name="label_not_ready">NOT READY</string>
+    <string name="status_missing">⚠️ MISSING: %1$s</string>
+
+    <!-- Roles -->
+    <string name="role_sipahi">Sipahi</string>
+    <string name="role_chor">Chor</string>
+    <string name="role_raja">Raja</string>
+    <string name="role_mantri">Mantri</string>
+    <string name="role_rani">Rani</string>
+    <string name="role_senapati">Senapati</string>
+    <string name="role_praja">Praja</string>
+
+    <!-- Game Activity -->
+    <string name="status_searching_police">Searching for Police...</string>
+    <string name="label_tap_reveal">TAP TO REVEAL</string>
+    <string name="label_role_placeholder">ROLE</string>
+    <string name="label_keep_secret">Keep this secret!</string>
+    <string name="label_tap_chor">Tap the Chor:</string>
+    <string name="label_round_announce">Round %1$d</string>
+    <string name="toast_name_missing">Player Name Missing!</string>
+    <string name="label_hi_player">Hi, %1$s</string>
+    <string name="toast_loading_role">Loading role...</string>
+    <string name="label_police_is">👮 Police is: %1$s</string>
+    <string name="msg_sipahi_wins">Sipahi Wins!</string>
+    <string name="msg_chor_wins">Chor Wins!</string>
+    <string name="dialog_round_over">Round %1$d Over</string>
+    <string name="btn_next_round">Next Round</string>
+    <string name="dialog_tournament_finished">Tournament Finished!</string>
+    <string name="msg_game_over">Game Over!</string>
+    <string name="btn_see_scoreboard">See Scoreboard</string>
+    <string name="msg_points_gained">You got: %1$d points!</string>
+
+    <!-- Dashboard Activity -->
+    <string name="title_final_results">🏆 FINAL RESULTS 🏆</string>
+    <string name="btn_back_menu">Back to Main Menu</string>
+    <string name="rank_1st">🥇 1st</string>
+    <string name="rank_2nd">🥈 2nd</string>
+    <string name="rank_3rd">🥉 3rd</string>
+    <string name="rank_last">🤡 Last</string>
+    <string name="label_winner_suffix"> (Winner!)</string>
+    <string name="label_loser_suffix"> (Better luck next time)</string>
+    <string name="toast_failed_scores">Failed to load scores</string>
+
+    <!-- Language Settings -->
+    <string name="dialog_select_language">Select Language</string>
+    <string name="btn_settings">Settings</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.agpitcodeclub.chorchithyamultiplayer;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -29,7 +30,7 @@ import java.util.List;
 
 public class GameActivity extends AppCompatActivity {
 
-    TextView tvPlayerName, tvRole, tvHiddenText, tvResult, tvInstruction;
+    TextView tvPlayerName, tvRole, tvHiddenText, tvResult, tvInstruction, tvPlayerAvatar;
     CardView cardView;
     LinearLayout layoutSipahiGuess;
     ListView listViewSuspects;
@@ -54,7 +55,13 @@ public class GameActivity extends AppCompatActivity {
     ArrayAdapter<String> adapter;
 
     @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase));
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
+        ThemeUtils.applyTheme(this);
         EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
@@ -69,6 +76,7 @@ public class GameActivity extends AppCompatActivity {
         tvRoundAnnounce = findViewById(R.id.tvRoundAnnounce);
         tvInstruction = findViewById(R.id.tvInstruction);
         tvPlayerName = findViewById(R.id.tvPlayerName);
+        tvPlayerAvatar = findViewById(R.id.tvPlayerAvatar);
         tvRole = findViewById(R.id.tvRole);
         tvHiddenText = findViewById(R.id.tvHiddenText);
         tvResult = findViewById(R.id.tvResult);
@@ -88,16 +96,19 @@ public class GameActivity extends AppCompatActivity {
         // 2. Get Intent Data
         roomCode = getIntent().getStringExtra("roomCode");
         playerName = getIntent().getStringExtra("playerName");
+        String avatar = getIntent().getStringExtra("avatar");
+        if (avatar == null) avatar = "🥷";
+        tvPlayerAvatar.setText(avatar);
 // Inside onCreate
         playerName = getIntent().getStringExtra("playerName");
 
         if (playerName == null || playerName.isEmpty()) {
             // Fallback: If intent fails, try to get it from Firebase or a SharedPreferences
             // For now, let's just toast an error to debug
-            Toast.makeText(this, "Player Name Missing!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.toast_name_missing, Toast.LENGTH_SHORT).show();
             playerName = "Player";
         }
-        tvPlayerName.setText("Hi, " + playerName);
+        tvPlayerName.setText(getString(R.string.label_hi_player, playerName));
         myMode = getIntent().getStringExtra("mode");
         mode = getIntent().getStringExtra("mode");
 
@@ -113,7 +124,7 @@ public class GameActivity extends AppCompatActivity {
                     totalRounds = snapshot.child("totalRounds").getValue(Integer.class);
 
                     // 1. Update Title
-                    setTitle("Round " + currentRound + " / " + totalRounds);
+                    setTitle(getString(R.string.label_round_count, currentRound, totalRounds));
 
                     // 2. TRIGGER ANIMATION HERE
                     playRoundAnimation(currentRound);
@@ -123,13 +134,21 @@ public class GameActivity extends AppCompatActivity {
             public void onCancelled(@NonNull DatabaseError error) {}
         });
 
-        // 3. Update Click Listener (Card Reveal)
+    // 3. Update Click Listener (Card Reveal)
         cardView.setOnClickListener(v -> {
+            if (myRole == null) {
+                Toast.makeText(this, R.string.toast_loading_role, Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             if (!isRevealed) {
                 // REVEAL
                 tvHiddenText.setVisibility(View.GONE);
                 findViewById(R.id.imgHiddenIcon).setVisibility(View.GONE);
                 tvRole.setVisibility(View.VISIBLE);
+
+                // 🔑 FIX: Change text color to dark when revealed on white background
+                tvRole.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.card_text_color));
 
                 cardLayout.setBackgroundColor(colorCardFace); // Use Dynamic Face Color
                 isRevealed = true;
@@ -138,6 +157,9 @@ public class GameActivity extends AppCompatActivity {
                 tvHiddenText.setVisibility(View.VISIBLE);
                 findViewById(R.id.imgHiddenIcon).setVisibility(View.VISIBLE);
                 tvRole.setVisibility(View.GONE);
+
+                // 🔑 Reset to white for the orange background
+                tvRole.setTextColor(android.graphics.Color.WHITE);
 
                 cardLayout.setBackgroundColor(colorCardBack); // Use Dynamic Back Color
                 isRevealed = false;
@@ -157,10 +179,10 @@ public class GameActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists()) {
                     myRole = snapshot.getValue(String.class);
-                    tvRole.setText(myRole);
+                    tvRole.setText(getRoleDisplayName(myRole));
 
                     // IMPORTANT: Reset UI states based on role
-                    if ("Sipahi".equals(myRole)) {
+                    if ("sipahi".equals(myRole)) {
                         setupSipahiUI();
                     } else {
                         layoutSipahiGuess.setVisibility(View.GONE);
@@ -178,21 +200,34 @@ public class GameActivity extends AppCompatActivity {
         layoutSipahiGuess.setVisibility(View.VISIBLE); // Show the guessing area
         tvInstruction.setVisibility(View.GONE);
 
-        // Load other players into the list
-        roomRef.child("players").addListenerForSingleValueEvent(new ValueEventListener() {
+        // 🔑 FIX: Change to addValueEventListener to handle "Ghost Players" in real-time
+        roomRef.child("players").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 suspectsList.clear();
                 for (DataSnapshot player : snapshot.getChildren()) {
                     String pName = player.getKey();
                     // Don't add myself to the suspect list
-                    if (!pName.equals(playerName)) {
+                    if (pName != null && !pName.equals(playerName)) {
                         suspectsList.add(pName);
                     }
                 }
-                // Show list
-                adapter = new ArrayAdapter<>(GameActivity.this, android.R.layout.simple_list_item_1, suspectsList);
-                listViewSuspects.setAdapter(adapter);
+                
+                if (adapter == null) {
+                    adapter = new ArrayAdapter<String>(GameActivity.this, android.R.layout.simple_list_item_1, suspectsList) {
+                        @NonNull
+                        @Override
+                        public View getView(int position, View convertView, @NonNull android.view.ViewGroup parent) {
+                            View view = super.getView(position, convertView, parent);
+                            TextView textView = view.findViewById(android.R.id.text1);
+                            textView.setTextColor(androidx.core.content.ContextCompat.getColor(GameActivity.this, R.color.text_primary));
+                            return view;
+                        }
+                    };
+                    listViewSuspects.setAdapter(adapter);
+                } else {
+                    adapter.notifyDataSetChanged();
+                }
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
@@ -211,12 +246,12 @@ public class GameActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 String realRole = snapshot.getValue(String.class);
 
-                if ("Chor".equals(realRole)) {
+                if ("chor".equals(realRole)) {
                     // CORRECT GUESS!
-                    roomRef.child("winner").setValue("Sipahi"); // Tell Firebase Sipahi won
+                    roomRef.child("winner").setValue("sipahi"); // Tell Firebase Sipahi won
                 } else {
                     // WRONG GUESS!
-                    roomRef.child("winner").setValue("Chor"); // Tell Firebase Chor won
+                    roomRef.child("winner").setValue("chor"); // Tell Firebase Chor won
                 }
                 // Hide buttons so I can't guess again
                 layoutSipahiGuess.setVisibility(View.GONE);
@@ -228,7 +263,7 @@ public class GameActivity extends AppCompatActivity {
 
     // --- GAME OVER & NEXT ROUND LOGIC ---
     private void showGameOverDialog(String winner) {
-        String message = "Sipahi".equals(winner) ? "Sipahi Wins!" : "Chor Wins!";
+        String message = "sipahi".equals(winner) ? getString(R.string.msg_sipahi_wins) : getString(R.string.msg_chor_wins);
 
         tvResult.setText(message);
         tvResult.setVisibility(View.VISIBLE);
@@ -242,11 +277,11 @@ public class GameActivity extends AppCompatActivity {
         // LOGIC: Is this the LAST round?
         if (currentRound < totalRounds) {
             // --- NOT FINISHED: Show "Next Round" ---
-            builder.setTitle("Round " + currentRound + " Over");
+            builder.setTitle(getString(R.string.dialog_round_over, currentRound));
             builder.setMessage(message);
 
             // 🔑 UPDATED POSITIVE BUTTON LOGIC FOR ROSTER SAVING
-            builder.setPositiveButton("Next Round", (dialog, which) -> {
+            builder.setPositiveButton(R.string.btn_next_round, (dialog, which) -> {
                 if (roomRef != null) {
                     roomRef.child("winner").removeValue();
                     roomRef.child("status").setValue("waiting");
@@ -274,23 +309,37 @@ public class GameActivity extends AppCompatActivity {
                                     }
 
                                     // 4. Send everyone to the lobby
-                                    goToLobby();
+                                    Intent intent = new Intent(GameActivity.this, RoomActivity.class);
+                                    intent.putExtra("playerName", playerName);
+                                    intent.putExtra("roomCode", roomCode);
+                                    intent.putExtra("avatar", tvPlayerAvatar.getText().toString());
+                                    intent.putExtra("mode", myMode);
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    startActivity(intent);
+                                    finish();
                                 });
                     }
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
                         Toast.makeText(GameActivity.this, "Error saving player roster.", Toast.LENGTH_SHORT).show();
                         // Fallback: If roster save fails, still send to lobby to prevent lockup
-                        goToLobby();
+                        Intent intent = new Intent(GameActivity.this, RoomActivity.class);
+                        intent.putExtra("playerName", playerName);
+                        intent.putExtra("roomCode", roomCode);
+                        intent.putExtra("avatar", tvPlayerAvatar.getText().toString());
+                        intent.putExtra("mode", myMode);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(intent);
+                        finish();
                     }
                 });
             });
 
         } else {
             // --- FINISHED: Show "See Results" ---
-            builder.setTitle("Tournament Finished!");
-            builder.setMessage(message + "\n\nGame Over!");
-            builder.setPositiveButton("See Scoreboard", (dialog, which) -> {
+            builder.setTitle(R.string.dialog_tournament_finished);
+            builder.setMessage(message + "\n\n" + getString(R.string.msg_game_over));
+            builder.setPositiveButton(R.string.btn_see_scoreboard, (dialog, which) -> {
                 if (roomRef != null) roomRef.child("winner").removeValue();
 
                 // Go to Dashboard
@@ -304,17 +353,6 @@ public class GameActivity extends AppCompatActivity {
         if (!isFinishing() && !isDestroyed()) {
             builder.show();
         }
-    }
-
-    // Helper to keep code clean
-    private void goToLobby() {
-        Intent intent = new Intent(GameActivity.this, RoomActivity.class);
-        intent.putExtra("playerName", playerName);
-        intent.putExtra("roomCode", roomCode);
-        intent.putExtra("mode", myMode);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
-        finish();
     }
 
     // --- GLOBAL LISTENER (Everyone sees the result) ---
@@ -346,12 +384,12 @@ public class GameActivity extends AppCompatActivity {
 
         int roundPoints = 0;
         // 1. Calculate Points
-        if (myRole.equals("Raja")) roundPoints = 1000;
-        else if (myRole.equals("Rani")) roundPoints = 900;
-        else if (myRole.equals("Mantri")) roundPoints = 800;
-        else if (myRole.equals("Senapati")) roundPoints = 500;
-        else if (myRole.equals("Sipahi")) roundPoints = winnerRole.equals("Sipahi") ? 100 : 0;
-        else if (myRole.equals("Chor")) roundPoints = winnerRole.equals("Chor") ? 100 : 0;
+        if (myRole.equals("raja")) roundPoints = 1000;
+        else if (myRole.equals("rani")) roundPoints = 900;
+        else if (myRole.equals("mantri")) roundPoints = 800;
+        else if (myRole.equals("senapati")) roundPoints = 500;
+        else if (myRole.equals("sipahi")) roundPoints = winnerRole.equals("sipahi") ? 100 : 0;
+        else if (myRole.equals("chor")) roundPoints = winnerRole.equals("chor") ? 100 : 0;
 
         // 2. Save to Firebase (Add to existing score)
         int finalPoints = roundPoints;
@@ -373,7 +411,7 @@ public class GameActivity extends AppCompatActivity {
             public void onCancelled(@NonNull DatabaseError error) {}
         });
 
-        tvResult.append("\n\nYou got: " + roundPoints + " points!");
+        tvResult.append("\n\n" + getString(R.string.msg_points_gained, roundPoints));
     }
 
     private void findAndShowPolice() {
@@ -382,9 +420,9 @@ public class GameActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 for (DataSnapshot player : snapshot.getChildren()) {
                     String r = player.child("role").getValue(String.class);
-                    if ("Sipahi".equals(r)) {
+                    if ("sipahi".equals(r)) {
                         String name = player.getKey();
-                        tvPoliceName.setText("👮 Police is: " + name);
+                        tvPoliceName.setText(getString(R.string.label_police_is, name));
                         break; // Found them, stop looking
                     }
                 }
@@ -392,6 +430,20 @@ public class GameActivity extends AppCompatActivity {
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
         });
+    }
+
+    private String getRoleDisplayName(String roleKey) {
+        if (roleKey == null) return "";
+        switch (roleKey) {
+            case "sipahi": return getString(R.string.role_sipahi);
+            case "chor": return getString(R.string.role_chor);
+            case "raja": return getString(R.string.role_raja);
+            case "mantri": return getString(R.string.role_mantri);
+            case "rani": return getString(R.string.role_rani);
+            case "senapati": return getString(R.string.role_senapati);
+            case "praja": return getString(R.string.role_praja);
+            default: return roleKey;
+        }
     }
 
     @Override
@@ -404,7 +456,7 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void playRoundAnimation(int roundNum) {
-        tvRoundAnnounce.setText("Round " + roundNum);
+        tvRoundAnnounce.setText(getString(R.string.label_round_announce, roundNum));
         tvRoundAnnounce.setVisibility(View.VISIBLE);
         tvRoundAnnounce.setAlpha(0f);
         tvRoundAnnounce.setScaleX(0.5f);

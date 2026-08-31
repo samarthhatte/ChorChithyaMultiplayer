@@ -1,9 +1,11 @@
 package com.agpitcodeclub.chorchithyamultiplayer;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -11,6 +13,8 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.view.ViewGroup;
+import android.view.LayoutInflater;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -33,22 +37,65 @@ import java.util.Random;
 
 public class RoomActivity extends AppCompatActivity {
 
-    TextView tvRoomTitle, tvStatus; // Added tvStatus
+    TextView tvRoomTitle, tvStatus, tvRoundsInfo; // Added tvRoundsInfo
     ListView listViewPlayers;
     Button btnStart, btnShare, btnReady;
 
     String playerName = "";
     String roomCode = "";
     String role = "joiner";
+    String selectedAvatar = "🥷";
+    private static final String APP_URL = "https://play.google.com/store/apps/details?id=com.agpitcodeclub.chorchithyamultiplayer";
 
     FirebaseDatabase database;
     DatabaseReference roomRef;
 
-    List<String> playerList;
-    ArrayAdapter<String> adapter;
+    List<DataSnapshot> playerSnapshots;
+    PlayerAdapter adapter;
+
+    private class PlayerAdapter extends ArrayAdapter<DataSnapshot> {
+        public PlayerAdapter(List<DataSnapshot> players) {
+            super(RoomActivity.this, R.layout.player_list_item, players);
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                convertView = getLayoutInflater().inflate(R.layout.player_list_item, parent, false);
+            }
+            DataSnapshot player = getItem(position);
+            String name = player.getKey();
+            String avatar = player.child("avatar").getValue(String.class);
+            if (avatar == null) avatar = "🥷";
+
+            TextView tvName = convertView.findViewById(R.id.playerNameText);
+            TextView tvAvatar = convertView.findViewById(R.id.tvPlayerAvatar);
+            TextView tvReady = convertView.findViewById(R.id.tvReadyStatus);
+
+            tvName.setText(name);
+            tvAvatar.setText(avatar);
+
+            Boolean isReady = player.child("isReady").getValue(Boolean.class);
+            if (isReady != null && isReady) {
+                tvReady.setText(R.string.label_ready);
+                tvReady.setTextColor(Color.parseColor("#4CAF50")); // Green
+            } else {
+                tvReady.setText(R.string.label_not_ready);
+                tvReady.setTextColor(Color.parseColor("#F44336")); // Red
+            }
+
+            return convertView;
+        }
+    }
+
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase));
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        ThemeUtils.applyTheme(this);
         EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_room);
@@ -61,7 +108,8 @@ public class RoomActivity extends AppCompatActivity {
 
         // 1. Initialize UI
         tvRoomTitle = findViewById(R.id.tvRoomTitle);
-        tvStatus = findViewById(R.id.tvStatus); // <--- NEW
+        tvStatus = findViewById(R.id.tvStatus);
+        tvRoundsInfo = findViewById(R.id.tvRoundsInfo);
         listViewPlayers = findViewById(R.id.listViewPlayers);
         btnStart = findViewById(R.id.btnStartGame);
         btnShare = findViewById(R.id.btnShare);
@@ -69,14 +117,15 @@ public class RoomActivity extends AppCompatActivity {
 
         database = FirebaseDatabase.getInstance();
 
-        playerList = new ArrayList<>();
-        adapter = new ArrayAdapter<>(this, R.layout.player_list_item, playerList);
+        playerSnapshots = new ArrayList<>();
+        adapter = new PlayerAdapter(playerSnapshots);
         listViewPlayers.setAdapter(adapter);
 
         // 3. Get Data Safely
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             playerName = extras.getString("playerName", "Player");
+            selectedAvatar = extras.getString("avatar", "🥷");
             if (extras.containsKey("mode")) role = extras.getString("mode");
             if (role == null) role = "joiner";
             if (extras.containsKey("roomCode")) roomCode = extras.getString("roomCode");
@@ -112,19 +161,15 @@ public class RoomActivity extends AppCompatActivity {
         btnShare.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_SEND);
             intent.setType("text/plain");
-            intent.putExtra(Intent.EXTRA_TEXT, "Join my game! Code: " + roomCode);
-            intent.setPackage("com.whatsapp");
-            try {
-                startActivity(intent);
-            } catch (Exception e) {
-                Toast.makeText(this, "WhatsApp not installed", Toast.LENGTH_SHORT).show();
-            }
+            String shareMessage = getString(R.string.share_room_msg, roomCode, APP_URL);
+            intent.putExtra(Intent.EXTRA_TEXT, shareMessage);
+            startActivity(Intent.createChooser(intent, getString(R.string.share_via)));
         });
 
         // 7. Start Game Button
         btnStart.setOnClickListener(v -> {
-            if (playerList.size() < 2) {
-                Toast.makeText(this, "Need at least 2 players!", Toast.LENGTH_SHORT).show();
+            if (playerSnapshots.size() < 2) {
+                Toast.makeText(this, R.string.toast_need_2_players, Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -139,14 +184,18 @@ public class RoomActivity extends AppCompatActivity {
                     int totalPlayersInLobby = 0;
                     int readyPlayers = 0;
                     List<String> currentLobbyPlayers = new ArrayList<>();
+                    List<String> notReadyPlayerNames = new ArrayList<>();
 
                     for (DataSnapshot player : snapshot.child("players").getChildren()) {
-                        currentLobbyPlayers.add(player.getKey());
+                        String pName = player.getKey();
+                        currentLobbyPlayers.add(pName);
                         totalPlayersInLobby++;
 
                         Boolean isReady = player.child("isReady").getValue(Boolean.class);
                         if (isReady != null && isReady) {
                             readyPlayers++;
+                        } else {
+                            if (pName != null) notReadyPlayerNames.add(pName);
                         }
                     }
 
@@ -155,13 +204,14 @@ public class RoomActivity extends AppCompatActivity {
                         missingPlayers.removeAll(currentLobbyPlayers);
 
                         if (!missingPlayers.isEmpty()) {
-                            Toast.makeText(RoomActivity.this, "Still missing players!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(RoomActivity.this, R.string.toast_missing_players, Toast.LENGTH_SHORT).show();
                             return;
                         }
                     }
 
                     if (readyPlayers < totalPlayersInLobby) {
-                        Toast.makeText(RoomActivity.this, "Wait! Someone is not ready.", Toast.LENGTH_SHORT).show();
+                        String names = TextUtils.join(", ", notReadyPlayerNames);
+                        Toast.makeText(RoomActivity.this, getString(R.string.toast_not_ready_yet, names), Toast.LENGTH_SHORT).show();
                         return;
                     }
 
@@ -177,20 +227,20 @@ public class RoomActivity extends AppCompatActivity {
         btnReady.setOnClickListener(v -> {
             roomRef.child("players").child(playerName).child("isReady").setValue(true);
             btnReady.setVisibility(View.GONE); // Intended behavior: Hide after clicking
-            Toast.makeText(this, "Marked as Ready!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.toast_marked_ready, Toast.LENGTH_SHORT).show();
         });
     }
 
     private void showCreateRoomDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Tournament Settings");
-        builder.setMessage("How many rounds?");
+        builder.setTitle(R.string.dialog_tournament_settings);
+        builder.setMessage(R.string.dialog_how_many_rounds);
         final EditText input = new EditText(this);
         input.setInputType(InputType.TYPE_CLASS_NUMBER);
         input.setText("5");
         builder.setView(input);
 
-        builder.setPositiveButton("Create", (dialog, which) -> {
+        builder.setPositiveButton(R.string.btn_create, (dialog, which) -> {
             String roundsStr = input.getText().toString().trim();
             int totalRounds = roundsStr.isEmpty() ? 5 : Integer.parseInt(roundsStr);
 
@@ -205,6 +255,7 @@ public class RoomActivity extends AppCompatActivity {
 
             roomRef.child("players").child(playerName).child("role").setValue("host");
             roomRef.child("players").child(playerName).child("score").setValue(0);
+            roomRef.child("players").child(playerName).child("avatar").setValue(selectedAvatar);
 
             // 🔑 FIX: Host is AUTOMATICALLY Ready
             roomRef.child("players").child(playerName).child("isReady").setValue(true);
@@ -218,10 +269,11 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     private void setupExistingRoomAsHost() {
-        tvRoomTitle.setText("Room Code: " + roomCode);
+        tvRoomTitle.setText(getString(R.string.label_room_code_display, roomCode));
         roomRef = database.getReference("rooms").child(roomCode);
         roomRef.child("status").setValue("waiting");
         roomRef.child("players").child(playerName).child("role").setValue("host");
+        roomRef.child("players").child(playerName).child("avatar").setValue(selectedAvatar);
 
         // 🔑 FIX: Host is AUTOMATICALLY Ready on return
         roomRef.child("players").child(playerName).child("isReady").setValue(true);
@@ -238,25 +290,26 @@ public class RoomActivity extends AppCompatActivity {
                 if (snapshot.exists()) {
                     setupExistingRoomAsJoiner();
                 } else {
-                    Toast.makeText(RoomActivity.this, "Invalid Code", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(RoomActivity.this, R.string.toast_invalid_code, Toast.LENGTH_SHORT).show();
                     finish();
                 }
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(RoomActivity.this, "Error connecting to room", Toast.LENGTH_SHORT).show();
+                Toast.makeText(RoomActivity.this, R.string.toast_error_connecting, Toast.LENGTH_SHORT).show();
                 finish();
             }
         });
     }
 
     private void setupExistingRoomAsJoiner() {
-        tvRoomTitle.setText("Room Code: " + roomCode);
+        tvRoomTitle.setText(getString(R.string.label_room_code_display, roomCode));
         roomRef = database.getReference("rooms").child(roomCode);
 
         // Joiners are NOT ready initially
         roomRef.child("players").child(playerName).child("isReady").setValue(false);
         roomRef.child("players").child(playerName).child("role").setValue("joiner");
+        roomRef.child("players").child(playerName).child("avatar").setValue(selectedAvatar);
         roomRef.child("players").child(playerName).onDisconnect().removeValue();
         addRoomEventListener();
     }
@@ -268,17 +321,19 @@ public class RoomActivity extends AppCompatActivity {
                 DataSnapshot playersSnapshot = snapshot.child("players");
                 DataSnapshot rosterSnapshot = snapshot.child("lastPlayerRoster");
 
-                playerList.clear();
+                playerSnapshots.clear();
                 int totalPlayersInLobby = 0;
                 int readyPlayers = 0;
                 List<String> requiredRoster = null;
+                List<String> currentLobbyNames = new ArrayList<>();
 
                 if (rosterSnapshot.exists()) {
                     requiredRoster = (List<String>) rosterSnapshot.getValue();
                 }
 
                 for (DataSnapshot player : playersSnapshot.getChildren()) {
-                    playerList.add(player.getKey());
+                    playerSnapshots.add(player);
+                    currentLobbyNames.add(player.getKey());
                     totalPlayersInLobby++;
                     Boolean isReady = player.child("isReady").getValue(Boolean.class);
                     if (isReady != null && isReady) readyPlayers++;
@@ -286,34 +341,41 @@ public class RoomActivity extends AppCompatActivity {
                 adapter.notifyDataSetChanged();
 
                 // 🔑 FIX: Update tvStatus separately from tvRoomTitle
-                tvRoomTitle.setText("Room Code: " + roomCode); // Keep title clean
+                tvRoomTitle.setText(getString(R.string.label_room_code_display, roomCode)); // Keep title clean
+
+                // Update Rounds Info
+                Integer current = snapshot.child("currentRound").getValue(Integer.class);
+                Integer total = snapshot.child("totalRounds").getValue(Integer.class);
+                if (current != null && total != null) {
+                    tvRoundsInfo.setText(getString(R.string.label_round_count, current, total));
+                }
 
                 if (requiredRoster != null && !requiredRoster.isEmpty()) {
                     List<String> missingPlayers = new ArrayList<>(requiredRoster);
-                    missingPlayers.removeAll(playerList);
+                    missingPlayers.removeAll(currentLobbyNames);
 
                     if (!missingPlayers.isEmpty()) {
-                        tvStatus.setText("⚠️ MISSING: " + String.join(", ", missingPlayers));
+                        tvStatus.setText(getString(R.string.status_missing, TextUtils.join(", ", missingPlayers)));
                         tvStatus.setTextColor(Color.RED);
                         btnStart.setEnabled(false);
                     } else if (readyPlayers < totalPlayersInLobby) {
-                        tvStatus.setText("Waiting for " + (totalPlayersInLobby - readyPlayers) + " to click READY");
+                        tvStatus.setText(getString(R.string.status_waiting_for_ready, totalPlayersInLobby - readyPlayers));
                         tvStatus.setTextColor(Color.parseColor("#FFA500")); // Orange
                         btnStart.setEnabled(false);
                     } else {
-                        tvStatus.setText("ALL PLAYERS READY!");
+                        tvStatus.setText(R.string.status_all_ready);
                         tvStatus.setTextColor(Color.GREEN);
                         btnStart.setEnabled(true);
                     }
                 } else {
                     // Initial Lobby Logic
                     if (totalPlayersInLobby >= 2 && readyPlayers == totalPlayersInLobby) {
-                        tvStatus.setText("Ready to Start");
+                        tvStatus.setText(R.string.status_ready_to_start);
                         tvStatus.setTextColor(Color.GREEN);
                         btnStart.setEnabled(true);
 // Inside addRoomEventListener()
                     } else {
-                        tvStatus.setText("Waiting for players...");
+                        tvStatus.setText(R.string.status_waiting_players);
                         tvStatus.setTextColor(Color.parseColor("#3E2723")); // Use your theme's dark brown
                         btnStart.setEnabled(false);
                     }
@@ -321,7 +383,7 @@ public class RoomActivity extends AppCompatActivity {
 
                 String status = snapshot.child("status").getValue(String.class);
                 if ("closed".equals(status)) {
-                    Toast.makeText(RoomActivity.this, "Host closed room", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(RoomActivity.this, R.string.toast_host_closed, Toast.LENGTH_SHORT).show();
                     finish();
                 }
                 if ("playing".equals(status)) {
@@ -329,6 +391,7 @@ public class RoomActivity extends AppCompatActivity {
                     Intent intent = new Intent(RoomActivity.this, GameActivity.class);
                     intent.putExtra("roomCode", roomCode);
                     intent.putExtra("playerName", playerName);
+                    intent.putExtra("avatar", selectedAvatar);
                     intent.putExtra("mode", role);
                     startActivity(intent);
                     finish();
@@ -341,34 +404,42 @@ public class RoomActivity extends AppCompatActivity {
 
     private void startGame() {
         // Reset readiness for next round
-        for (String pName : playerList) {
-            // Host stays ready, Joiners must re-ready
-            boolean isHost = pName.equals(playerName) && role.equals("host");
-            roomRef.child("players").child(pName).child("isReady").setValue(isHost);
-        }
+        java.util.Map<String, Object> updates = new java.util.HashMap<>();
 
         List<String> finalRoles = new ArrayList<>();
-        finalRoles.add("Sipahi");
-        finalRoles.add("Chor");
+        finalRoles.add("sipahi");
+        finalRoles.add("chor");
         List<String> extraRoles = new ArrayList<>();
-        extraRoles.add("Raja");
-        extraRoles.add("Mantri");
-        extraRoles.add("Rani");
-        extraRoles.add("Senapati");
+        extraRoles.add("raja");
+        extraRoles.add("mantri");
+        extraRoles.add("rani");
+        extraRoles.add("senapati");
         Collections.shuffle(extraRoles);
 
-        int playersNeeded = playerList.size() - 2;
+        int playersNeeded = playerSnapshots.size() - 2;
         for (int i = 0; i < playersNeeded; i++) {
             if (i < extraRoles.size()) finalRoles.add(extraRoles.get(i));
-            else finalRoles.add("Praja");
+            else finalRoles.add("praja");
         }
 
         Collections.shuffle(finalRoles);
-        for (int i = 0; i < playerList.size(); i++) {
-            roomRef.child("players").child(playerList.get(i)).child("role").setValue(finalRoles.get(i));
+
+        for (int i = 0; i < playerSnapshots.size(); i++) {
+            String pName = playerSnapshots.get(i).getKey();
+            if (pName == null) continue;
+
+            // Update roles and reset readiness in one go
+            boolean isHost = pName.equals(playerName) && role.equals("host");
+            updates.put("players/" + pName + "/role", finalRoles.get(i));
+            updates.put("players/" + pName + "/isReady", isHost);
         }
 
-        roomRef.child("winner").removeValue();
-        roomRef.child("status").setValue("playing");
+        updates.put("winner", null);
+        updates.put("status", "playing");
+
+        // Single batch update for faster start and less network overhead
+        roomRef.updateChildren(updates).addOnFailureListener(e -> {
+            Toast.makeText(RoomActivity.this, "Failed to start game!", Toast.LENGTH_SHORT).show();
+        });
     }
 }

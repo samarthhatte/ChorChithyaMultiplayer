@@ -13,6 +13,18 @@
     <color name="primary_accent">#FF5722</color>
     <color name="secondary_accent">#4CAF50</color>
 
+    <!-- Blue Theme -->
+    <color name="blue_primary">#2196F3</color>
+    <color name="blue_background">#F0F7FF</color>
+
+    <!-- Purple Theme -->
+    <color name="purple_primary">#9C27B0</color>
+    <color name="purple_background">#F9F0FF</color>
+
+    <!-- Teal Theme -->
+    <color name="teal_primary">#009688</color>
+    <color name="teal_background">#F0FFFA</color>
+
     <!-- Legacy/Specific components -->
     <color name="card_back">#FF5722</color>
     <color name="card_face">#FFFFFF</color>
