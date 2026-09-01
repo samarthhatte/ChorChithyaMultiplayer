@@ -37,6 +37,7 @@ android {
 dependencies {
     // 1. Core Android Libraries
     implementation(libs.appcompat)
+    implementation(libs.firebase.messaging)
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)

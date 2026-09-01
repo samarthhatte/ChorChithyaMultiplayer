@@ -1,8 +1,11 @@
 package com.agpitcodeclub.chorchithyamultiplayer;// Check your own package name here
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.TextUtils;
@@ -18,8 +21,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 public class MainActivity extends AppCompatActivity {
+
+    public static final String CHANNEL_ID = "special_events_channel";
+    public static final String CHANNEL_NAME = "Special Events & Updates";
 
     EditText etPlayerName;
     Button btnCreate, btnJoin, btnInvite;
@@ -44,6 +51,12 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        // 1. Create Notification Channel
+        createNotificationChannel();
+
+        // 2. Subscribe to Topic for Broadcasts
+        FirebaseMessaging.getInstance().subscribeToTopic("events_and_updates");
 
         etPlayerName = findViewById(R.id.etPlayerName);
         btnCreate = findViewById(R.id.btnCreateRoom);
@@ -96,6 +109,23 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(Intent.createChooser(intent, getString(R.string.share_via)));
             }
         });
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            String description = "Notifications for game events, tournaments, and updates";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, importance);
+            channel.setDescription(description);
+            channel.enableLights(true);
+            channel.setLightColor(Color.RED);
+            channel.enableVibration(true);
+
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
     }
 
     private void showJoinDialog(String playerName) {
