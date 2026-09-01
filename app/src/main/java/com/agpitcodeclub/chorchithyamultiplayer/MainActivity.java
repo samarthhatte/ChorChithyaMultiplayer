@@ -1,9 +1,11 @@
 package com.agpitcodeclub.chorchithyamultiplayer;// Check your own package name here
 
+import android.Manifest;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -16,8 +18,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -34,10 +39,21 @@ public class MainActivity extends AppCompatActivity {
     String selectedAvatar = "🥷"; // Default avatar
     private static final String APP_URL = "https://play.google.com/store/apps/details?id=com.agpitcodeclub.chorchithyamultiplayer";
 
+    // 1. Declare Permission Request Launcher
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    Toast.makeText(this, "Notifications enabled!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Notifications disabled. You might miss events!", Toast.LENGTH_SHORT).show();
+                }
+            });
+
     @Override
     protected void attachBaseContext(Context newBase) {
         super.attachBaseContext(LocaleHelper.onAttach(newBase));
     }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +73,8 @@ public class MainActivity extends AppCompatActivity {
 
         // 2. Subscribe to Topic for Broadcasts
         FirebaseMessaging.getInstance().subscribeToTopic("events_and_updates");
+        // 2. Check and request notification permission
+        checkNotificationPermission();
 
         etPlayerName = findViewById(R.id.etPlayerName);
         btnCreate = findViewById(R.id.btnCreateRoom);
@@ -109,6 +127,16 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(Intent.createChooser(intent, getString(R.string.share_via)));
             }
         });
+    }
+
+    // --- PERMISSION CHECK METHOD ---
+    private void checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                // If permission is not granted, launch the system prompt
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
     }
 
     private void createNotificationChannel() {
