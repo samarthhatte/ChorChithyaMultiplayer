@@ -11,6 +11,7 @@
     <string name="btn_invite_friends">दोस्तों को आमंत्रित करें</string>
     <string name="toast_enter_name">कृपया अपना नाम दर्ज करें</string>
     <string name="dialog_enter_room_code">रूम कोड दर्ज करें</string>
+    <string name="dialog_join_room_title">रूम में शामिल हों: %1$s</string>
     <string name="btn_join">शामिल हों</string>
     <string name="btn_cancel">रद्द करें</string>
     <string name="share_app_msg">नमस्ते! चोर चिट्ठियां मल्टीप्लेयर डाउनलोड करें और मेरे साथ खेलें: %1$s</string>
@@ -28,7 +29,8 @@
     <string name="status_waiting_players">खिलाड़ियों का इंतज़ार है...</string>
     <string name="btn_ready">मैं तैयार हूँ</string>
     <string name="btn_start_game">गेम शुरू करें</string>
-    <string name="share_room_msg">मेरे चोर चिट्ठियां गेम में शामिल हों! \nरूम कोड: %1$s \n\nऐप डाउनलोड करें: %2$s</string>
+    <string name="share_room_msg">मेरे चोर चिट्ठियां गेम में शामिल हों!\nडायरेक्ट लिंक: %1$s\nरूम कोड: %2$s\n\nऐप डाउनलोड करें: %3$s</string>
+    <string name="toast_joining_room">रूम %1$s में शामिल हो रहे हैं...</string>
     <string name="toast_need_2_players">कम से कम 2 खिलाड़ी चाहिए!</string>
     <string name="toast_missing_players">अभी भी खिलाड़ी कम हैं!</string>
     <string name="toast_not_ready_yet">%1$s अभी तैयार नहीं हैं</string>

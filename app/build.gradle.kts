@@ -12,8 +12,8 @@ android {
         applicationId = "com.agpitcodeclub.chorchithyamultiplayer"
         minSdk = 24
         targetSdk = 36
-        versionCode = 47
-        versionName = "5.7"
+        versionCode = 48
+        versionName = "5.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -37,6 +37,7 @@ android {
 dependencies {
     // 1. Core Android Libraries
     implementation(libs.appcompat)
+    implementation(libs.firebase.config)
     implementation(libs.firebase.messaging)
     implementation(libs.material)
     implementation(libs.activity)

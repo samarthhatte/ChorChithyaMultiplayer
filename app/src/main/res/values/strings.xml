@@ -11,6 +11,7 @@
     <string name="btn_invite_friends">Invite Friends</string>
     <string name="toast_enter_name">Please enter your name</string>
     <string name="dialog_enter_room_code">Enter Room Code</string>
+    <string name="dialog_join_room_title">Join Room: %1$s</string>
     <string name="btn_join">Join</string>
     <string name="btn_cancel">Cancel</string>
     <string name="share_app_msg">Hey! Download Chor Chithya Multiplayer and play with me: %1$s</string>
@@ -28,7 +29,8 @@
     <string name="status_waiting_players">Waiting for players...</string>
     <string name="btn_ready">I AM READY</string>
     <string name="btn_start_game">Start Game</string>
-    <string name="share_room_msg">Join my Chor Chithya game! \nRoom Code: %1$s \n\nDownload App: %2$s</string>
+    <string name="share_room_msg">Join my Chor Chithya game!\nDirect Link: %1$s\nRoom Code: %2$s\n\nDownload App: %3$s</string>
+    <string name="toast_joining_room">Joining room %1$s...</string>
     <string name="toast_need_2_players">Need at least 2 players!</string>
     <string name="toast_missing_players">Still missing players!</string>
     <string name="toast_not_ready_yet">%1$s are not ready yet</string>
@@ -90,4 +92,14 @@
     <!-- Language Settings -->
     <string name="dialog_select_language">Select Language</string>
     <string name="btn_settings">Settings</string>
+    <string name="start_new_game">Start New Game</string>
+    <string name="join_existing_game">Join Existing Game</string>
+
+    <!-- Rate App -->
+    <string name="rate_dialog_title">Enjoying Chor Chithya?</string>
+    <string name="rate_dialog_msg">If you like playing, please take a moment to rate us on the Play Store!</string>
+    <string name="rate_now">Rate Now ⭐</string>
+    <string name="rate_later">Later</string>
+    <string name="rate_never">No Thanks</string>
+    <string name="btn_rate_app">Rate Game ⭐</string>
 </resources>

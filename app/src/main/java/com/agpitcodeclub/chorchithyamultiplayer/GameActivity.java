@@ -115,21 +115,24 @@ public class GameActivity extends AppCompatActivity {
         roomRef = FirebaseDatabase.getInstance().getReference("rooms").child(roomCode);
 
 
-        // Inside onCreate, after defining roomRef:
         roomRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.hasChild("currentRound") && snapshot.hasChild("totalRounds")) {
-                    currentRound = snapshot.child("currentRound").getValue(Integer.class);
-                    totalRounds = snapshot.child("totalRounds").getValue(Integer.class);
+                Integer fetchedCurrent = snapshot.child("currentRound").getValue(Integer.class);
+                Integer fetchedTotal = snapshot.child("totalRounds").getValue(Integer.class);
+
+                if (fetchedCurrent != null && fetchedTotal != null) {
+                    currentRound = fetchedCurrent;
+                    totalRounds = fetchedTotal;
 
                     // 1. Update Title
                     setTitle(getString(R.string.label_round_count, currentRound, totalRounds));
 
-                    // 2. TRIGGER ANIMATION HERE
+                    // 2. Trigger round animation
                     playRoundAnimation(currentRound);
                 }
             }
+
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
         });
@@ -337,17 +340,27 @@ public class GameActivity extends AppCompatActivity {
 
         } else {
             // --- FINISHED: Show "See Results" ---
-            builder.setTitle(R.string.dialog_tournament_finished);
-            builder.setMessage(message + "\n\n" + getString(R.string.msg_game_over));
-            builder.setPositiveButton(R.string.btn_see_scoreboard, (dialog, which) -> {
-                if (roomRef != null) roomRef.child("winner").removeValue();
 
-                // Go to Dashboard
-                Intent intent = new Intent(GameActivity.this, DashboardActivity.class);
-                intent.putExtra("roomCode", roomCode);
-                startActivity(intent);
-                finish();
+            // Trigger the dialog after this match finishes:
+            RateAppManager.showRateDialogEveryMatch(GameActivity.this, () -> {
+                // This runs when user taps Rate Now, Later, or Never:
+                builder.setTitle(R.string.dialog_tournament_finished);
+                builder.setMessage(message + "\n\n" + getString(R.string.msg_game_over));
+                builder.setPositiveButton(R.string.btn_see_scoreboard, (dialog, which) -> {
+                    if (roomRef != null) roomRef.child("winner").removeValue();
+
+                    // Go to Dashboard
+                    Intent intent = new Intent(GameActivity.this, DashboardActivity.class);
+                    intent.putExtra("roomCode", roomCode);
+                    startActivity(intent);
+                    finish();
+                });
+
+                if (!isFinishing() && !isDestroyed()) {
+                    builder.show();
+                }
             });
+            return; // Stop here so builder is not triggered twice
         }
 
         if (!isFinishing() && !isDestroyed()) {
