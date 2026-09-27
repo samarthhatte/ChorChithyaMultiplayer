@@ -2,12 +2,12 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?android:attr/windowBackground">
 
-    <!-- Content Container -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -18,6 +18,7 @@
             android:layout_height="wrap_content"
             android:paddingBottom="32dp">
 
+            <!-- Header Banner -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/headerCard"
                 android:layout_width="match_parent"
@@ -44,11 +45,12 @@
                     app:drawableStartCompat="@android:drawable/ic_menu_search" />
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Player Profile Bar -->
             <LinearLayout
                 android:id="@+id/nameContainer"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="20dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -57,12 +59,12 @@
 
                 <TextView
                     android:id="@+id/tvPlayerAvatar"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
                     android:background="@drawable/rounded_bg"
                     android:gravity="center"
                     android:text="🥷"
-                    android:textSize="24sp" />
+                    android:textSize="22sp" />
 
                 <TextView
                     android:id="@+id/tvPlayerName"
@@ -71,40 +73,44 @@
                     android:layout_marginStart="12dp"
                     android:text="@string/hint_your_name"
                     android:textColor="@color/text_primary"
-                    android:textSize="22sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
+            <!-- Role Card (3:4 Ratio) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardViewRole"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="20dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?android:attr/selectableItemBackground"
-                app:cardBackgroundColor="@color/primary_accent"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="12dp"
-                app:strokeWidth="0dp"
+                app:strokeWidth="2dp"
+                app:strokeColor="#33FFFFFF"
                 app:layout_constraintDimensionRatio="3:4"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/nameContainer"
-                app:layout_constraintWidth_percent="0.75">
+                app:layout_constraintWidth_percent="0.78">
 
+                <!-- 1. Hidden / Face-down Layout -->
                 <LinearLayout
-                    android:id="@+id/cardLayout"
+                    android:id="@+id/cardHiddenLayout"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:background="@color/primary_accent"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:background="@color/primary_accent">
+                    android:padding="20dp"
+                    android:visibility="visible">
 
                     <ImageView
                         android:id="@+id/imgHiddenIcon"
-                        android:layout_width="80dp"
-                        android:layout_height="80dp"
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
                         android:src="@android:drawable/ic_dialog_email"
                         app:tint="@color/white" />
 
@@ -112,53 +118,128 @@
                         android:id="@+id/tvHiddenText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
+                        android:layout_marginTop="16dp"
                         android:text="@string/label_tap_reveal"
                         android:textColor="@color/white"
-                        android:textSize="24sp"
+                        android:textSize="20sp"
                         android:textStyle="bold" />
+                </LinearLayout>
 
+                <!-- 2. Revealed / Face-up Layout -->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/cardRevealedLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="20dp"
+                    android:visibility="gone">
+
+                    <!-- Top Left Badge -->
+                    <TextView
+                        android:id="@+id/tvRoleTag"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="#26FFFFFF"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="4dp"
+                        android:textColor="#FFFFFF"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.08"
+                        tools:text="ROLE"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintStart_toStartOf="parent" />
+
+                    <!-- Top Right Points -->
+                    <TextView
+                        android:id="@+id/tvRolePoints"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#D9FFFFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        tools:text="1000 PTS"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent" />
+
+                    <!-- Center Role Emoji -->
+                    <TextView
+                        android:id="@+id/tvRoleIcon"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="72sp"
+                        android:gravity="center"
+                        tools:text="👑"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toTopOf="@id/tvRole"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintVertical_chainStyle="packed" />
+
+                    <!-- Main Role Title -->
                     <TextView
                         android:id="@+id/tvRole"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/label_role_placeholder"
-                        android:textColor="@color/card_text_color"
-                        android:textSize="45sp"
+                        android:layout_marginTop="8dp"
+                        android:textColor="#FFFFFF"
+                        android:textSize="32sp"
                         android:textStyle="bold"
-                        android:visibility="gone" />
-                </LinearLayout>
+                        android:letterSpacing="0.03"
+                        tools:text="King"
+                        app:layout_constraintTop_toBottomOf="@id/tvRoleIcon"
+                        app:layout_constraintBottom_toTopOf="@id/tvRoleSubtitle"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent" />
+
+                    <!-- Role Task / Subtitle -->
+                    <TextView
+                        android:id="@+id/tvRoleSubtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="13sp"
+                        android:gravity="center"
+                        tools:text="Rule the round"
+                        app:layout_constraintTop_toBottomOf="@id/tvRole"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
             </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 android:id="@+id/tvInstruction"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="20dp"
                 android:text="@string/label_keep_secret"
                 android:textColor="@color/text_secondary"
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textStyle="italic"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/cardViewRole" />
 
+            <!-- Police Guessing Section -->
             <LinearLayout
                 android:id="@+id/layoutSipahiGuess"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingHorizontal="24dp"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="20dp"
                 android:visibility="gone"
                 app:layout_constraintTop_toBottomOf="@id/tvInstruction">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/label_tap_chor"
-                    android:textColor="#F44336"
-                    android:textSize="18sp"
+                    android:text="Tap to arrest the Thief:"
+                    android:textColor="#EF4444"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <ListView
@@ -175,10 +256,10 @@
                 android:id="@+id/tvResult"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="20dp"
                 android:text=""
                 android:textColor="@color/text_primary"
-                android:textSize="22sp"
+                android:textSize="20sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 app:layout_constraintEnd_toEndOf="parent"

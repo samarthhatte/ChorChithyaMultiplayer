@@ -159,9 +159,14 @@ public class RoomActivity extends AppCompatActivity {
 
         // 6. Share Button
         btnShare.setOnClickListener(v -> {
+            if (TextUtils.isEmpty(roomCode)) {
+                Toast.makeText(this, R.string.toast_enter_code, Toast.LENGTH_SHORT).show();
+                return;
+            }
             Intent intent = new Intent(Intent.ACTION_SEND);
             intent.setType("text/plain");
-            String shareMessage = getString(R.string.share_room_msg, roomCode, APP_URL);
+            String joinLink = "https://samarthhatte.github.io/join?roomCode=" + roomCode;
+            String shareMessage = getString(R.string.share_room_msg, joinLink, roomCode, APP_URL);
             intent.putExtra(Intent.EXTRA_TEXT, shareMessage);
             startActivity(Intent.createChooser(intent, getString(R.string.share_via)));
         });

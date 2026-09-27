@@ -1,31 +1,86 @@
-package com.agpitcodeclub.chorchithyamultiplayer;// Check your own package name here
+package com.agpitcodeclub.chorchithyamultiplayer;
 
+import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.TextUtils;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.messaging.BuildConfig;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class MainActivity extends AppCompatActivity {
+
+    public static final String CHANNEL_ID = "special_events_channel";
+    public static final String CHANNEL_NAME = "Special Events & Updates";
+    private static final String NOTIF_TOPIC = "events_and_updates";
+    private BillingManager billingManager;
 
     EditText etPlayerName;
     Button btnCreate, btnJoin, btnInvite;
     android.widget.ImageButton btnSettings;
-    String selectedAvatar = "🥷"; // Default avatar
+    String selectedAvatar = "🥷";
     private static final String APP_URL = "https://play.google.com/store/apps/details?id=com.agpitcodeclub.chorchithyamultiplayer";
+
+    private static final String PREFS_NAME = "player_prefs";
+    private static final String KEY_PLAYER_NAME = "saved_player_name";
+
+    private void savePlayerName(String name) {
+        if (!TextUtils.isEmpty(name)) {
+            getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                    .edit()
+                    .putString(KEY_PLAYER_NAME, name)
+                    .apply();
+        }
+    }
+
+    private String getSavedPlayerName() {
+        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .getString(KEY_PLAYER_NAME, "");
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleDeepLink(intent);
+    }
+
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    Toast.makeText(this, "Notifications enabled!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Notifications disabled. You might miss events!", Toast.LENGTH_SHORT).show();
+                }
+            });
 
     @Override
     protected void attachBaseContext(Context newBase) {
@@ -45,77 +100,195 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        // 1. Setup notification channel
+        createNotificationChannel();
+
+        // 2. Fetch Remote Config & handle topic subscription dynamically
+        setupRemoteConfigAndNotifications();
+
+        // 3. Initialize Views
         etPlayerName = findViewById(R.id.etPlayerName);
         btnCreate = findViewById(R.id.btnCreateRoom);
         btnJoin = findViewById(R.id.btnJoinRoom);
         btnInvite = findViewById(R.id.btnInviteFriends);
         btnSettings = findViewById(R.id.btnSettings);
 
+        // 4. Initialize Google Play Billing
+        billingManager = new BillingManager(this);
+
+        String savedName = getSavedPlayerName();
+        if (!savedName.isEmpty() && etPlayerName.getText().toString().trim().isEmpty()) {
+            etPlayerName.setText(savedName);
+        }
+
         setupAvatarSelection();
 
         btnSettings.setOnClickListener(v -> showThemeSelectionDialog());
 
-        // Logic for Create Room
-        btnCreate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String playerName = etPlayerName.getText().toString();
-                if (TextUtils.isEmpty(playerName)) {
-                    Toast.makeText(MainActivity.this, R.string.toast_enter_name, Toast.LENGTH_SHORT).show();
-                } else {
-                    // Start the Room Activity - Host Mode
-                    Intent intent = new Intent(MainActivity.this, RoomActivity.class);
-                    intent.putExtra("playerName", playerName);
-                    intent.putExtra("avatar", selectedAvatar);
-                    intent.putExtra("mode", "host");
-                    startActivity(intent);
-                }
+        btnCreate.setOnClickListener(v -> {
+            String playerName = etPlayerName.getText().toString().trim();
+            if (TextUtils.isEmpty(playerName)) {
+                Toast.makeText(MainActivity.this, R.string.toast_enter_name, Toast.LENGTH_SHORT).show();
+            } else {
+                savePlayerName(playerName);
+                Intent intent = new Intent(MainActivity.this, RoomActivity.class);
+                intent.putExtra("playerName", playerName);
+                intent.putExtra("avatar", selectedAvatar);
+                intent.putExtra("mode", "host");
+                startActivity(intent);
             }
         });
 
-        // Logic for Join Room
-        btnJoin.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String playerName = etPlayerName.getText().toString();
-                if (TextUtils.isEmpty(playerName)) {
-                    Toast.makeText(MainActivity.this, R.string.toast_enter_name, Toast.LENGTH_SHORT).show();
-                } else {
-                    showJoinDialog(playerName);
-                }
+        btnJoin.setOnClickListener(v -> {
+            String playerName = etPlayerName.getText().toString().trim();
+            if (TextUtils.isEmpty(playerName)) {
+                Toast.makeText(MainActivity.this, R.string.toast_enter_name, Toast.LENGTH_SHORT).show();
+            } else {
+                savePlayerName(playerName);
+                showJoinDialog(playerName, "");
             }
         });
 
-        // Logic for Invite Friends
-        btnInvite.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_SEND);
-                intent.setType("text/plain");
-                intent.putExtra(Intent.EXTRA_TEXT, getString(R.string.share_app_msg, APP_URL));
-                startActivity(Intent.createChooser(intent, getString(R.string.share_via)));
-            }
+        btnInvite.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("text/plain");
+            intent.putExtra(Intent.EXTRA_TEXT, getString(R.string.share_app_msg, APP_URL));
+            startActivity(Intent.createChooser(intent, getString(R.string.share_via)));
         });
+
+        handleDeepLink(getIntent());
     }
 
-    private void showJoinDialog(String playerName) {
+    private void setupRemoteConfigAndNotifications() {
+        FirebaseRemoteConfig mRemoteConfig = FirebaseRemoteConfig.getInstance();
+
+        FirebaseRemoteConfigSettings configSettings = new FirebaseRemoteConfigSettings.Builder()
+                .setMinimumFetchIntervalInSeconds(BuildConfig.DEBUG ? 0 : 3600)
+                .build();
+        mRemoteConfig.setConfigSettingsAsync(configSettings);
+
+        Map<String, Object> defaultMap = new HashMap<>();
+        defaultMap.put("notifications_enabled", true);
+        mRemoteConfig.setDefaultsAsync(defaultMap);
+
+        mRemoteConfig.fetchAndActivate()
+                .addOnCompleteListener(this, task -> {
+                    boolean isEnabledByDev = mRemoteConfig.getBoolean("notifications_enabled");
+                    boolean isEnabledByUser = NotificationUtils.isNotificationsEnabled(this);
+
+                    if (isEnabledByDev && isEnabledByUser) {
+                        FirebaseMessaging.getInstance().subscribeToTopic(NOTIF_TOPIC);
+                        checkNotificationPermission();
+                    } else {
+                        FirebaseMessaging.getInstance().unsubscribeFromTopic(NOTIF_TOPIC);
+                    }
+                });
+    }
+
+    private void checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            String description = "Notifications for game events, tournaments, and updates";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, importance);
+            channel.setDescription(description);
+            channel.enableLights(true);
+            channel.setLightColor(Color.RED);
+            channel.enableVibration(true);
+
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
+    }
+
+    private void handleDeepLink(Intent intent) {
+        if (intent == null || intent.getData() == null) return;
+
+        Uri data = intent.getData();
+        String extractedRoomCode = null;
+
+        if (data.isHierarchical()) {
+            extractedRoomCode = data.getQueryParameter("roomCode");
+            if (TextUtils.isEmpty(extractedRoomCode)) {
+                extractedRoomCode = data.getQueryParameter("code");
+            }
+        }
+
+        if (TextUtils.isEmpty(extractedRoomCode)) {
+            List<String> pathSegments = data.getPathSegments();
+            if (pathSegments != null && !pathSegments.isEmpty()) {
+                String last = pathSegments.get(pathSegments.size() - 1);
+                if (last != null && last.matches("\\d+")) {
+                    extractedRoomCode = last;
+                }
+            }
+        }
+
+        if (!TextUtils.isEmpty(extractedRoomCode)) {
+            final String codeToJoin = extractedRoomCode;
+            intent.setData(null);
+
+            String currentInput = etPlayerName.getText().toString().trim();
+            String savedName = getSavedPlayerName();
+            String nameToUse = !currentInput.isEmpty() ? currentInput : savedName;
+
+            if (!TextUtils.isEmpty(nameToUse)) {
+                if (currentInput.isEmpty()) {
+                    etPlayerName.setText(nameToUse);
+                }
+                savePlayerName(nameToUse);
+                Toast.makeText(this, getString(R.string.toast_joining_room, codeToJoin), Toast.LENGTH_SHORT).show();
+
+                Intent roomIntent = new Intent(MainActivity.this, RoomActivity.class);
+                roomIntent.putExtra("playerName", nameToUse);
+                roomIntent.putExtra("avatar", selectedAvatar);
+                roomIntent.putExtra("mode", "join");
+                roomIntent.putExtra("roomCode", codeToJoin);
+                startActivity(roomIntent);
+            } else {
+                showJoinDialog("", codeToJoin);
+            }
+        }
+    }
+
+    private void showJoinDialog(String playerName, String defaultRoomCode) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.dialog_enter_room_code);
         final EditText input = new EditText(this);
         input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        if (!TextUtils.isEmpty(defaultRoomCode)) {
+            input.setText(defaultRoomCode);
+        }
         input.setTextColor(Color.BLACK);
         input.setHintTextColor(Color.GRAY);
         builder.setView(input);
 
         builder.setPositiveButton(R.string.btn_join, (dialog, which) -> {
             String roomCode = input.getText().toString().trim();
+            String pName = etPlayerName.getText().toString().trim();
+            if (TextUtils.isEmpty(pName)) {
+                pName = playerName;
+            }
+            if (TextUtils.isEmpty(pName)) {
+                Toast.makeText(this, R.string.toast_enter_name, Toast.LENGTH_SHORT).show();
+                return;
+            }
             if (roomCode.isEmpty()) {
                 Toast.makeText(this, R.string.toast_enter_code, Toast.LENGTH_SHORT).show();
                 return;
             }
-            // Start RoomActivity with the code
+            savePlayerName(pName);
             Intent intent = new Intent(MainActivity.this, RoomActivity.class);
-            intent.putExtra("playerName", playerName);
+            intent.putExtra("playerName", pName);
             intent.putExtra("avatar", selectedAvatar);
             intent.putExtra("mode", "join");
             intent.putExtra("roomCode", roomCode);
@@ -137,26 +310,35 @@ public class MainActivity extends AppCompatActivity {
 
         for (TextView tv : avatars) {
             tv.setOnClickListener(v -> {
-                // Reset all
                 for (TextView a : avatars) a.setBackground(null);
-                // Select this one
                 tv.setBackgroundResource(R.drawable.rounded_bg);
                 selectedAvatar = tv.getText().toString();
             });
         }
-        // Initial selection
         avatars[0].setBackgroundResource(R.drawable.rounded_bg);
     }
 
     private void showThemeSelectionDialog() {
-        String[] options = {getString(R.string.dialog_select_theme), getString(R.string.dialog_select_language)};
-        
+        String[] options = {
+                getString(R.string.dialog_select_theme),
+                getString(R.string.dialog_select_language),
+                "☕ Buy Developer a Coffee"
+        };
+
         new AlertDialog.Builder(this)
                 .setTitle(R.string.btn_settings)
                 .setItems(options, (dialog, which) -> {
-                    if (which == 0) showThemeChoice();
-                    else showLanguageChoice();
+                    if (which == 0) {
+                        showThemeChoice();
+                    } else if (which == 1) {
+                        showLanguageChoice();
+                    } else if (which == 2) {
+                        if (billingManager != null) {
+                            billingManager.purchaseCoffee();
+                        }
+                    }
                 })
+                .setNegativeButton(R.string.btn_cancel, null)
                 .show();
     }
 
@@ -183,7 +365,7 @@ public class MainActivity extends AppCompatActivity {
     private void showLanguageChoice() {
         String[] languages = {"English", "हिन्दी (Hindi)", "मराठी (Marathi)"};
         String[] codes = {"en", "hi", "mr"};
-        
+
         String currentLang = LocaleHelper.getLanguage(this);
         int checkedItem = 0;
         for (int i = 0; i < codes.length; i++) {
@@ -202,5 +384,13 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .setNegativeButton(R.string.btn_cancel, null)
                 .show();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (billingManager != null) {
+            billingManager.destroy();
+        }
     }
 }
