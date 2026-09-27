@@ -145,7 +145,11 @@ public class DashboardActivity extends AppCompatActivity {
         }
 
         btnBack.setOnClickListener(v -> {
-
+            Intent intent = new Intent(DashboardActivity.this, MainActivity.class);
+            // Clear all previous activities (GameActivity, RoomActivity) so back button won't return to them
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
         });
     }
 }

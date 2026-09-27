@@ -1,4 +1,4 @@
-package com.agpitcodeclub.chorchithyamultiplayer;// Check your own package name here
+package com.agpitcodeclub.chorchithyamultiplayer;
 
 import android.Manifest;
 import android.app.NotificationChannel;
@@ -12,7 +12,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.TextUtils;
-
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -42,11 +41,12 @@ public class MainActivity extends AppCompatActivity {
     public static final String CHANNEL_ID = "special_events_channel";
     public static final String CHANNEL_NAME = "Special Events & Updates";
     private static final String NOTIF_TOPIC = "events_and_updates";
+    private BillingManager billingManager;
 
     EditText etPlayerName;
     Button btnCreate, btnJoin, btnInvite;
     android.widget.ImageButton btnSettings;
-    String selectedAvatar = "🥷"; // Default avatar
+    String selectedAvatar = "🥷";
     private static final String APP_URL = "https://play.google.com/store/apps/details?id=com.agpitcodeclub.chorchithyamultiplayer";
 
     private static final String PREFS_NAME = "player_prefs";
@@ -73,7 +73,6 @@ public class MainActivity extends AppCompatActivity {
         handleDeepLink(intent);
     }
 
-    // 1. Declare Permission Request Launcher
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
@@ -88,7 +87,6 @@ public class MainActivity extends AppCompatActivity {
         super.attachBaseContext(LocaleHelper.onAttach(newBase));
     }
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         ThemeUtils.applyTheme(this);
@@ -102,23 +100,22 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        // 1. Create Notification Channel
+        // 1. Setup notification channel
         createNotificationChannel();
 
-        // 2. Fetch Remote Config Kill-Switch and Handle Subscription
+        // 2. Fetch Remote Config & handle topic subscription dynamically
         setupRemoteConfigAndNotifications();
-        // 2. Subscribe to Topic for Broadcasts
-        FirebaseMessaging.getInstance().subscribeToTopic("events_and_updates");
-        // 2. Check and request notification permission
-//        checkNotificationPermission();
 
+        // 3. Initialize Views
         etPlayerName = findViewById(R.id.etPlayerName);
         btnCreate = findViewById(R.id.btnCreateRoom);
         btnJoin = findViewById(R.id.btnJoinRoom);
         btnInvite = findViewById(R.id.btnInviteFriends);
         btnSettings = findViewById(R.id.btnSettings);
 
-        // Pre-fill saved player name if available
+        // 4. Initialize Google Play Billing
+        billingManager = new BillingManager(this);
+
         String savedName = getSavedPlayerName();
         if (!savedName.isEmpty() && etPlayerName.getText().toString().trim().isEmpty()) {
             etPlayerName.setText(savedName);
@@ -128,14 +125,12 @@ public class MainActivity extends AppCompatActivity {
 
         btnSettings.setOnClickListener(v -> showThemeSelectionDialog());
 
-        // Logic for Create Room
         btnCreate.setOnClickListener(v -> {
             String playerName = etPlayerName.getText().toString().trim();
             if (TextUtils.isEmpty(playerName)) {
                 Toast.makeText(MainActivity.this, R.string.toast_enter_name, Toast.LENGTH_SHORT).show();
             } else {
                 savePlayerName(playerName);
-                // Start the Room Activity - Host Mode
                 Intent intent = new Intent(MainActivity.this, RoomActivity.class);
                 intent.putExtra("playerName", playerName);
                 intent.putExtra("avatar", selectedAvatar);
@@ -144,7 +139,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Logic for Join Room
         btnJoin.setOnClickListener(v -> {
             String playerName = etPlayerName.getText().toString().trim();
             if (TextUtils.isEmpty(playerName)) {
@@ -155,7 +149,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Logic for Invite Friends
         btnInvite.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_SEND);
             intent.setType("text/plain");
@@ -163,49 +156,38 @@ public class MainActivity extends AppCompatActivity {
             startActivity(Intent.createChooser(intent, getString(R.string.share_via)));
         });
 
-        // Handle Deep Link if app opened via shareable link
         handleDeepLink(getIntent());
     }
 
     private void setupRemoteConfigAndNotifications() {
         FirebaseRemoteConfig mRemoteConfig = FirebaseRemoteConfig.getInstance();
 
-        // In development/testing, set interval to 0 for instant testing.
-        // In production, 3600 (1 hour) is recommended.
         FirebaseRemoteConfigSettings configSettings = new FirebaseRemoteConfigSettings.Builder()
                 .setMinimumFetchIntervalInSeconds(BuildConfig.DEBUG ? 0 : 3600)
                 .build();
         mRemoteConfig.setConfigSettingsAsync(configSettings);
 
-        // Fallback default value if device is offline or first launch
         Map<String, Object> defaultMap = new HashMap<>();
         defaultMap.put("notifications_enabled", true);
         mRemoteConfig.setDefaultsAsync(defaultMap);
 
         mRemoteConfig.fetchAndActivate()
                 .addOnCompleteListener(this, task -> {
-                    // Read developer flag from Firebase Console
                     boolean isEnabledByDev = mRemoteConfig.getBoolean("notifications_enabled");
-
-                    // Read user preference from local settings
                     boolean isEnabledByUser = NotificationUtils.isNotificationsEnabled(this);
 
                     if (isEnabledByDev && isEnabledByUser) {
-                        // Subscribe user to broadcast
                         FirebaseMessaging.getInstance().subscribeToTopic(NOTIF_TOPIC);
                         checkNotificationPermission();
                     } else {
-                        // Unsubscribe user if developer killed it OR user turned it OFF
                         FirebaseMessaging.getInstance().unsubscribeFromTopic(NOTIF_TOPIC);
                     }
                 });
     }
 
-    // --- PERMISSION CHECK METHOD ---
     private void checkNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                // If permission is not granted, launch the system prompt
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
             }
         }
@@ -253,7 +235,6 @@ public class MainActivity extends AppCompatActivity {
 
         if (!TextUtils.isEmpty(extractedRoomCode)) {
             final String codeToJoin = extractedRoomCode;
-            // Clear data intent to avoid re-triggering on rotation/recreation
             intent.setData(null);
 
             String currentInput = etPlayerName.getText().toString().trim();
@@ -274,7 +255,6 @@ public class MainActivity extends AppCompatActivity {
                 roomIntent.putExtra("roomCode", codeToJoin);
                 startActivity(roomIntent);
             } else {
-                // Name missing, show join dialog with code prefilled
                 showJoinDialog("", codeToJoin);
             }
         }
@@ -307,7 +287,6 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             savePlayerName(pName);
-            // Start RoomActivity with the code
             Intent intent = new Intent(MainActivity.this, RoomActivity.class);
             intent.putExtra("playerName", pName);
             intent.putExtra("avatar", selectedAvatar);
@@ -331,27 +310,35 @@ public class MainActivity extends AppCompatActivity {
 
         for (TextView tv : avatars) {
             tv.setOnClickListener(v -> {
-                // Reset all
                 for (TextView a : avatars) a.setBackground(null);
-                // Select this one
                 tv.setBackgroundResource(R.drawable.rounded_bg);
                 selectedAvatar = tv.getText().toString();
             });
         }
-        // Initial selection
         avatars[0].setBackgroundResource(R.drawable.rounded_bg);
     }
 
     private void showThemeSelectionDialog() {
-        String[] options = {getString(R.string.dialog_select_theme), getString(R.string.dialog_select_language), getString(R.string.btn_rate_app)};
-        
+        String[] options = {
+                getString(R.string.dialog_select_theme),
+                getString(R.string.dialog_select_language),
+                "☕ Buy Developer a Coffee"
+        };
+
         new AlertDialog.Builder(this)
                 .setTitle(R.string.btn_settings)
                 .setItems(options, (dialog, which) -> {
-                    if (which == 0) showThemeChoice();
-                    else if (which == 1) showLanguageChoice();
-                    else RateAppManager.openPlayStore(this);
+                    if (which == 0) {
+                        showThemeChoice();
+                    } else if (which == 1) {
+                        showLanguageChoice();
+                    } else if (which == 2) {
+                        if (billingManager != null) {
+                            billingManager.purchaseCoffee();
+                        }
+                    }
                 })
+                .setNegativeButton(R.string.btn_cancel, null)
                 .show();
     }
 
@@ -378,7 +365,7 @@ public class MainActivity extends AppCompatActivity {
     private void showLanguageChoice() {
         String[] languages = {"English", "हिन्दी (Hindi)", "मराठी (Marathi)"};
         String[] codes = {"en", "hi", "mr"};
-        
+
         String currentLang = LocaleHelper.getLanguage(this);
         int checkedItem = 0;
         for (int i = 0; i < codes.length; i++) {
@@ -397,5 +384,13 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .setNegativeButton(R.string.btn_cancel, null)
                 .show();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (billingManager != null) {
+            billingManager.destroy();
+        }
     }
 }

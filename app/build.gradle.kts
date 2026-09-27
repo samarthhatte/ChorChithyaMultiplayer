@@ -12,8 +12,8 @@ android {
         applicationId = "com.agpitcodeclub.chorchithyamultiplayer"
         minSdk = 24
         targetSdk = 36
-        versionCode = 48
-        versionName = "5.8"
+        versionCode = 50
+        versionName = "6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -43,7 +43,7 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation("androidx.cardview:cardview:1.0.0")
-
+    implementation("com.android.billingclient:billing:8.0.0")
     // 2. Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
     implementation("com.google.firebase:firebase-database")
